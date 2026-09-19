@@ -217,6 +217,37 @@ export interface CraftableTarget {
 
 // フィールド地図・環境ギミック型定義
 export type ClimateSeason = 'barren' | 'anomaly' | 'abundant';
+export type CampSafety = 'stable' | 'unstable' | 'dangerous';
+
+export interface OfficialCampSpot {
+  id: string;
+  name: string;
+  areaNumber: number;
+  locationName: string;
+  safety: CampSafety;
+  safetyLabel: '安全' | '不安定' | '要注意（危険）';
+  coordinates: { x: number; y: number };
+  description: string;
+  isRecommended?: boolean;
+}
+
+export interface AreaTopologyNode {
+  areaNumber: number;
+  name: string;
+  x: number; // % (0-100)
+  y: number; // % (0-100)
+  radius: number;
+  elevation: 'upper' | 'middle' | 'lower' | 'surface' | 'underground' | 'all';
+  terrainType: 'desert' | 'oasis' | 'cave' | 'forest' | 'water' | 'oil' | 'volcano' | 'ruins';
+  terrainLabel: string;
+  monstersFound: string[];
+}
+
+export interface AreaConnection {
+  from: number;
+  to: number;
+  type?: 'normal' | 'tunnel' | 'cliff';
+}
 
 export interface MapPin {
   id: string;
@@ -225,7 +256,7 @@ export interface MapPin {
   areaNumber: number;
   name: string;
   description: string;
-  coordinates: { x: number; y: number }; // マップ上の相対座標 % (0-100)
+  coordinates: { x: number; y: number };
   gimmickEffect?: string;
   gatheringItems?: string[];
   climateCondition?: ClimateSeason | 'all';
@@ -244,7 +275,8 @@ export interface FieldMapData {
   name: string;
   nameEn: string;
   description: string;
-  mapImageUrl: string;
+  maxCampCount: number; // 同時設営上限数（例: 砂原:5, 緋の森:5, 油涌き谷:6）
+  availableLayers?: { id: string; name: string }[];
   climates: {
     barren: {
       name: string;
@@ -267,12 +299,9 @@ export interface FieldMapData {
       specialGathering: string;
     };
   };
-  baseCamps: {
-    name: string;
-    area: number;
-    unlockRequirement: string;
-    description: string;
-  }[];
+  officialCamps: OfficialCampSpot[];
+  areaNodes: AreaTopologyNode[];
+  connections: AreaConnection[];
   environmentalGimmicks: {
     name: string;
     area: number;
@@ -286,5 +315,6 @@ export interface FieldMapData {
     tips: string;
   }[];
   areas: FieldArea[];
-  mapPins: MapPin[];
+  mapPins?: MapPin[];
 }
+

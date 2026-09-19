@@ -1,22 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fieldsMapData } from '../data/mapsData';
-import { FieldMapData, ClimateSeason, MapPin } from '../types';
-import { Map, Tent, Zap, Sparkles, Compass, Eye, AlertTriangle, Droplets, Flame, Wind, Layers, ChevronRight, CheckCircle2, Maximize2, X } from 'lucide-react';
+import { FieldMapData, ClimateSeason, OfficialCampSpot, AreaTopologyNode } from '../types';
+import { 
+  Map, Tent, Zap, Sparkles, Compass, Eye, AlertTriangle, Droplets, 
+  Flame, Wind, Layers, ChevronRight, CheckCircle2, RotateCcw, Navigation
+} from 'lucide-react';
 
 export const InteractiveMapSection: React.FC = () => {
   const [selectedFieldId, setSelectedFieldId] = useState<string>('windward-plains');
   const [selectedClimate, setSelectedClimate] = useState<ClimateSeason>('anomaly');
-  const [pinFilter, setPinFilter] = useState<'all' | 'camp' | 'gimmick' | 'gathering' | 'nest'>('all');
-  const [activePin, setActivePin] = useState<MapPin | null>(null);
-  const [isZoomed, setIsZoomed] = useState<boolean>(false);
+  const [selectedLayer, setSelectedLayer] = useState<string>('all');
+  const [selectedArea, setSelectedArea] = useState<AreaTopologyNode | null>(null);
+  const [selectedCamp, setSelectedCamp] = useState<OfficialCampSpot | null>(null);
+  
+  // 設営中キャンプID（最大上限数まで管理）
+  const [deployedCampIds, setDeployedCampIds] = useState<string[]>([]);
 
   const selectedField = fieldsMapData.find(f => f.id === selectedFieldId) || fieldsMapData[0];
   const climateInfo = selectedField.climates[selectedClimate];
 
-  // フィルター済みピン一覧
-  const filteredPins = selectedField.mapPins.filter(pin => {
-    if (pinFilter === 'all') return true;
-    return pin.type === pinFilter;
+  // フィールド切り替え時におすすめキャンプを初期設営
+  useEffect(() => {
+    const recommended = selectedField.officialCamps
+      .filter(c => c.isRecommended)
+      .slice(0, selectedField.maxCampCount)
+      .map(c => c.id);
+    setDeployedCampIds(recommended);
+    setSelectedArea(null);
+    setSelectedCamp(null);
+    setSelectedLayer('all');
+  }, [selectedFieldId]);
+
+  // キャンプ設営トグル
+  const toggleDeployCamp = (campId: string) => {
+    if (deployedCampIds.includes(campId)) {
+      setDeployedCampIds(deployedCampIds.filter(id => id !== campId));
+    } else {
+      if (deployedCampIds.length >= selectedField.maxCampCount) {
+        alert(`このフィールドでの同時設営可能キャンプ数は最大${selectedField.maxCampCount}箇所までです。不要なキャンプを撤去してください。`);
+        return;
+      }
+      setDeployedCampIds([...deployedCampIds, campId]);
+    }
+  };
+
+  // おすすめ構成一括適用
+  const applyRecommendedCamps = () => {
+    const recommended = selectedField.officialCamps
+      .filter(c => c.isRecommended)
+      .slice(0, selectedField.maxCampCount)
+      .map(c => c.id);
+    setDeployedCampIds(recommended);
+  };
+
+  // 階層フィルター
+  const visibleNodes = selectedField.areaNodes.filter(node => {
+    if (selectedLayer === 'all') return true;
+    return node.elevation === selectedLayer || node.elevation === 'all';
   });
 
   return (
@@ -43,7 +83,8 @@ export const InteractiveMapSection: React.FC = () => {
               key={field.id}
               onClick={() => {
                 setSelectedFieldId(field.id);
-                setActivePin(null);
+                setSelectedArea(null);
+                setSelectedCamp(null);
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 selectedFieldId === field.id
@@ -160,246 +201,419 @@ export const InteractiveMapSection: React.FC = () => {
       </div>
 
       {/* インタラクティブ・ビジュアルマップ ＆ 詳細パネル */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 地図キャンバス（左2カラム） */}
-        <div className="lg:col-span-2 bg-[#10141f] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
+      {/* メインマップエリア ＆ 設営シミュレーター */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* 左側（7/12）：公式トポロジー・SVGタクティカルマップ */}
+        <div className="lg:col-span-7 bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
             <div>
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <span>{selectedField.name} 戦術タクティカルマップ</span>
+              <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider block">
+                Official Area Topology
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                {selectedField.name} 公式エリア全体図
               </h3>
-              <span className="text-[11px] text-slate-400">ピンをクリックすると詳細情報と攻略手順が表示されます</span>
             </div>
 
-            {/* ピン種別フィルター */}
-            <div className="flex items-center bg-[#0c0f16] p-1 rounded-lg border border-slate-800 overflow-x-auto">
-              <button
-                onClick={() => setPinFilter('all')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap ${
-                  pinFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400'
-                }`}
-              >
-                全て
-              </button>
-              <button
-                onClick={() => setPinFilter('camp')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap ${
-                  pinFilter === 'camp' ? 'bg-sky-500 text-white font-bold' : 'text-sky-400'
-                }`}
-              >
-                🏕️ キャンプ
-              </button>
-              <button
-                onClick={() => setPinFilter('gimmick')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap ${
-                  pinFilter === 'gimmick' ? 'bg-purple-500 text-white font-bold' : 'text-purple-400'
-                }`}
-              >
-                ⚡ 罠ギミック
-              </button>
-              <button
-                onClick={() => setPinFilter('gathering')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap ${
-                  pinFilter === 'gathering' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-emerald-400'
-                }`}
-              >
-                💎 発掘採取
-              </button>
-              <button
-                onClick={() => setPinFilter('nest')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap ${
-                  pinFilter === 'nest' ? 'bg-rose-500 text-white font-bold' : 'text-rose-400'
-                }`}
-              >
-                🐲 巣穴
-              </button>
-            </div>
+            {/* 階層レイヤー切り替え */}
+            {selectedField.availableLayers && (
+              <div className="flex items-center bg-[#0e121a] p-1 rounded-lg border border-slate-800 text-xs">
+                {selectedField.availableLayers.map(layer => (
+                  <button
+                    key={layer.id}
+                    onClick={() => setSelectedLayer(layer.id)}
+                    className={`px-2 py-1 rounded text-[11px] font-bold transition-all ${
+                      selectedLayer === layer.id
+                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {layer.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* マップビジュアルエリア（ゲーム内立体地形図 ＆ インタラクティブHUD） */}
-          <div className="relative w-full aspect-[4/3] bg-[#0c0f17] rounded-xl border border-slate-700/80 overflow-hidden shadow-2xl flex items-center justify-center group">
-            {/* 地形地図イラスト背景画像 */}
-            <img
-              src={selectedField.mapImageUrl}
-              alt={`${selectedField.name} 立体フィールド地図`}
-              className={`absolute inset-0 w-full h-full object-cover select-none transition-all duration-700 ${
-                selectedClimate === 'barren'
-                  ? 'sepia-[0.15] contrast-110 brightness-95'
-                  : selectedClimate === 'anomaly'
-                  ? 'brightness-90 contrast-125 saturate-110'
-                  : 'saturate-125 brightness-105'
-              }`}
-            />
+          {/* SVG タクティカルマップ */}
+          <div className="relative w-full aspect-[4/3] bg-[#090d14] rounded-xl border border-slate-800 overflow-hidden shadow-inner flex items-center justify-center select-none">
+            {/* 方眼グリッド背景 */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d25_1px,transparent_1px),linear-gradient(to_bottom,#1f293d25_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none"></div>
 
-            {/* 気候連動オーラ・環境エフェクトオーバーレイ */}
-            {selectedClimate === 'anomaly' && (
-              <div className="absolute inset-0 bg-gradient-to-t from-purple-950/40 via-purple-900/10 to-purple-950/30 pointer-events-none mix-blend-overlay animate-pulse"></div>
-            )}
-            {selectedClimate === 'abundant' && (
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/20 via-transparent to-amber-950/20 pointer-events-none"></div>
-            )}
-
-            {/* 周辺減光（ヴィネット）＆タクティカルHUDフレーム */}
-            <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.7)] pointer-events-none"></div>
-            <div className="absolute inset-0 border border-amber-500/20 rounded-xl pointer-events-none"></div>
-            
-            {/* HUDコーナーブラケット */}
-            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-400 pointer-events-none"></div>
-            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-400 pointer-events-none"></div>
-            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-400 pointer-events-none"></div>
-            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-400 pointer-events-none"></div>
-
-            {/* 地図情報バッジ */}
-            <div className="absolute top-3 left-3 bg-[#0c0f16]/90 backdrop-blur border border-amber-500/30 px-2.5 py-1 rounded-lg text-[10px] text-amber-300 font-bold shadow-lg flex items-center space-x-1.5 pointer-events-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <span>{selectedField.name} 立体地形地図（{selectedField.nameEn}）</span>
+            {/* コンパスローズ装飾 */}
+            <div className="absolute top-3 right-3 text-slate-700 pointer-events-none flex flex-col items-center">
+              <span className="text-[10px] font-black text-amber-500/60 mb-0.5">N</span>
+              <Compass className="w-6 h-6 opacity-30 text-amber-400" />
             </div>
 
-            {/* 拡大表示ボタン */}
-            <button
-              onClick={() => setIsZoomed(true)}
-              className="absolute top-3 right-3 bg-[#0c0f16]/90 hover:bg-[#1a2030] backdrop-blur border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-white px-2 py-1 rounded-lg text-[11px] font-semibold shadow-lg flex items-center space-x-1 transition-all z-20"
-              title="地図を高解像度で全画面拡大"
+            {/* SVG キャンバス */}
+            <svg
+              className="w-full h-full"
+              viewBox="0 0 1000 800"
+              preserveAspectRatio="xMidYMid meet"
             >
-              <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">地図拡大</span>
-            </button>
+              <defs>
+                <radialGradient id="desertGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#d97706" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#78350f" stopOpacity="0.1" />
+                </radialGradient>
+                <radialGradient id="waterGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#0369a1" stopOpacity="0.15" />
+                </radialGradient>
+                <radialGradient id="caveGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#475569" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#1e293b" stopOpacity="0.2" />
+                </radialGradient>
+                <radialGradient id="forestGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#15803d" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#14532d" stopOpacity="0.15" />
+                </radialGradient>
+                <radialGradient id="volcanoGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#dc2626" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#991b1b" stopOpacity="0.15" />
+                </radialGradient>
+                <radialGradient id="ruinsGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#9333ea" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#581c87" stopOpacity="0.15" />
+                </radialGradient>
+              </defs>
 
-            {/* インタラクティブピン */}
-            {filteredPins.map(pin => {
-              const isSelected = activePin?.id === pin.id;
-              const getPinStyle = (type: string) => {
-                switch (type) {
-                  case 'camp':
-                    return 'bg-sky-500 text-slate-950 border-sky-200 shadow-sky-500/60 ring-2 ring-sky-400/40';
-                  case 'gimmick':
-                    return 'bg-purple-600 text-white border-purple-200 shadow-purple-600/60 ring-2 ring-purple-400/40';
-                  case 'gathering':
-                    return 'bg-emerald-500 text-slate-950 border-emerald-200 shadow-emerald-500/60 ring-2 ring-emerald-400/40';
-                  case 'nest':
-                    return 'bg-rose-600 text-white border-rose-200 shadow-rose-600/60 ring-2 ring-rose-400/40';
-                  default:
-                    return 'bg-amber-500 text-slate-950 border-amber-200 shadow-amber-500/60 ring-2 ring-amber-400/40';
-                }
-              };
+              {/* 1. エリア接続ルート（ライン） */}
+              {selectedField.connections.map((conn, idx) => {
+                const nodeFrom = selectedField.areaNodes.find(n => n.areaNumber === conn.from);
+                const nodeTo = selectedField.areaNodes.find(n => n.areaNumber === conn.to);
+                if (!nodeFrom || !nodeTo) return null;
 
-              const getPinIcon = (type: string) => {
-                switch (type) {
-                  case 'camp': return '🏕️';
-                  case 'gimmick': return '⚡';
-                  case 'gathering': return '💎';
-                  case 'nest': return '🐲';
-                  default: return '📍';
+                const x1 = (nodeFrom.x * 10);
+                const y1 = (nodeFrom.y * 8);
+                const x2 = (nodeTo.x * 10);
+                const y2 = (nodeTo.y * 8);
+
+                return (
+                  <line
+                    key={idx}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke="#475569"
+                    strokeWidth="3"
+                    strokeDasharray="6 4"
+                    strokeLinecap="round"
+                    opacity="0.6"
+                  />
+                );
+              })}
+
+              {/* 2. エリアノード（円形領土） */}
+              {visibleNodes.map(node => {
+                const isSelected = selectedArea?.areaNumber === node.areaNumber;
+                const cx = node.x * 10;
+                const cy = node.y * 8;
+                const r = node.radius * 2.2;
+
+                const getGradId = () => {
+                  switch (node.terrainType) {
+                    case 'oasis':
+                    case 'water': return 'url(#waterGrad)';
+                    case 'cave': return 'url(#caveGrad)';
+                    case 'forest': return 'url(#forestGrad)';
+                    case 'volcano':
+                    case 'oil': return 'url(#volcanoGrad)';
+                    case 'ruins': return 'url(#ruinsGrad)';
+                    default: return 'url(#desertGrad)';
+                  }
+                };
+
+                const getStrokeColor = () => {
+                  if (isSelected) return '#fbbf24';
+                  switch (node.terrainType) {
+                    case 'oasis':
+                    case 'water': return '#38bdf8';
+                    case 'cave': return '#94a3b8';
+                    case 'forest': return '#4ade80';
+                    case 'volcano':
+                    case 'oil': return '#f87171';
+                    case 'ruins': return '#c084fc';
+                    default: return '#f59e0b';
+                  }
+                };
+
+                return (
+                  <g
+                    key={node.areaNumber}
+                    onClick={() => {
+                      setSelectedArea(node);
+                      setSelectedCamp(null);
+                    }}
+                    className="cursor-pointer transition-transform hover:scale-105"
+                  >
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={r}
+                      fill={getGradId()}
+                      stroke={getStrokeColor()}
+                      strokeWidth={isSelected ? '3.5' : '1.5'}
+                      strokeDasharray={node.elevation === 'underground' || node.elevation === 'lower' ? '4 3' : 'none'}
+                    />
+
+                    <text
+                      x={cx}
+                      y={cy - 4}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="#ffffff"
+                      fontSize="22"
+                      fontWeight="900"
+                      className="font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+                    >
+                      {node.areaNumber}
+                    </text>
+
+                    <text
+                      x={cx}
+                      y={cy + 18}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill={isSelected ? '#fbbf24' : '#cbd5e1'}
+                      fontSize="10"
+                      fontWeight="bold"
+                      className="drop-shadow"
+                    >
+                      {node.name.length > 7 ? `${node.name.slice(0, 6)}..` : node.name}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* 3. HTMLオーバーレイ：簡易キャンプ設営ピン */}
+            {selectedField.officialCamps.map(camp => {
+              const isDeployed = deployedCampIds.includes(camp.id);
+              const isSelected = selectedCamp?.id === camp.id;
+              
+              const getSafetyBadgeStyle = () => {
+                switch (camp.safety) {
+                  case 'stable': return 'border-emerald-400 bg-emerald-500 text-slate-950 shadow-emerald-500/50';
+                  case 'unstable': return 'border-amber-400 bg-amber-500 text-slate-950 shadow-amber-500/50';
+                  case 'dangerous': return 'border-rose-400 bg-rose-500 text-white shadow-rose-500/50';
                 }
               };
 
               return (
                 <div
-                  key={pin.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 group/pin"
-                  style={{ left: `${pin.coordinates.x}%`, top: `${pin.coordinates.y}%` }}
+                  key={camp.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 group"
+                  style={{ left: `${camp.coordinates.x}%`, top: `${camp.coordinates.y}%` }}
                 >
-                  {/* 選択中の波紋エフェクト */}
-                  {isSelected && (
-                    <span className="absolute -inset-2 rounded-full bg-amber-400/40 animate-ping pointer-events-none"></span>
-                  )}
-
-                  {/* ピンボタン */}
                   <button
-                    onClick={() => setActivePin(pin)}
-                    className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-2xl cursor-pointer transition-all hover:scale-125 ${getPinStyle(pin.type)} ${
-                      isSelected ? 'ring-4 ring-amber-400 scale-125 z-30' : ''
-                    }`}
-                    title={`${pin.name} (エリア${pin.areaNumber})`}
+                    onClick={() => {
+                      setSelectedCamp(camp);
+                      const parentArea = selectedField.areaNodes.find(a => a.areaNumber === camp.areaNumber);
+                      if (parentArea) setSelectedArea(parentArea);
+                    }}
+                    className={`relative flex items-center justify-center rounded-full border shadow-lg transition-all ${
+                      isDeployed
+                        ? 'w-7 h-7 bg-sky-500 border-white text-slate-950 ring-2 ring-sky-400/80 scale-110'
+                        : `w-5 h-5 ${getSafetyBadgeStyle()} opacity-80 hover:opacity-100 hover:scale-125`
+                    } ${isSelected ? 'ring-4 ring-amber-400 scale-125 z-30' : ''}`}
+                    title={`${camp.name}（${camp.safetyLabel}）${isDeployed ? '【設営中】' : '【未設営】'}`}
                   >
-                    <span className="text-xs filter drop-shadow">{getPinIcon(pin.type)}</span>
+                    {isDeployed ? (
+                      <Tent className="w-4 h-4" />
+                    ) : (
+                      <span className="text-[9px] font-black leading-none">C</span>
+                    )}
                   </button>
 
-                  {/* ホバーまたは選択時の吹き出しラベル */}
-                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none transition-all ${
-                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover/pin:opacity-100 group-hover/pin:scale-100'
+                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none transition-all ${
+                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
                   }`}>
-                    {pin.name}
+                    {camp.name}
+                    <span className={`ml-1 text-[9px] px-1 rounded ${
+                      camp.safety === 'stable' ? 'bg-emerald-500/30 text-emerald-300' :
+                      camp.safety === 'unstable' ? 'bg-amber-500/30 text-amber-300' : 'bg-rose-500/30 text-rose-300'
+                    }`}>
+                      {camp.safetyLabel}
+                    </span>
                   </div>
                 </div>
               );
             })}
 
             {/* ガイド注記 */}
-            <div className="absolute bottom-2.5 left-2.5 bg-[#0c0f16]/90 backdrop-blur border border-slate-700 px-2.5 py-1 rounded text-[10px] text-slate-300 pointer-events-none shadow-lg">
-              🎯 ピンをクリックで詳細情報・ギミック手順を表示
+            <div className="absolute bottom-2.5 left-2.5 bg-[#0c0f16]/90 backdrop-blur border border-slate-700 px-2.5 py-1 rounded text-[10px] text-slate-300 pointer-events-none shadow-lg flex items-center space-x-2">
+              <span>🎯 エリア円クリックで詳細情報</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-sky-400">🏕️ 設営キャンプ</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-emerald-400">● 安全</span>
+              <span className="text-amber-400">● 不安定</span>
+              <span className="text-rose-400">● 要注意</span>
             </div>
           </div>
         </div>
 
-        {/* 右側：選択ピンの詳細情報 / エリアガイド */}
-        <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl flex flex-col justify-between">
-          <div>
-            <div className="border-b border-slate-800/80 pb-3">
-              <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider block">スポット詳細情報</span>
-              <h4 className="text-base sm:text-lg font-black text-white mt-0.5">
-                {activePin ? activePin.name : '地図上のピンを選択してください'}
-              </h4>
-              {activePin && (
-                <span className="text-xs text-slate-400">
-                  エリア {activePin.areaNumber} ・ {activePin.typeLabel}
-                </span>
+        {/* 右側（5/12）：簡易キャンプ設営シミュレーター ＆ スポット詳細 */}
+        <div className="lg:col-span-5 space-y-4">
+          
+          {/* キャンプ設営シミュレーター */}
+          <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+              <div className="flex items-center space-x-2">
+                <Tent className="w-4 h-4 text-sky-400" />
+                <h4 className="text-sm sm:text-base font-bold text-white">
+                  簡易キャンプ設営シミュレーター
+                </h4>
+              </div>
+              <span className="text-xs font-mono font-bold bg-sky-950/60 border border-sky-500/40 text-sky-300 px-2 py-0.5 rounded-full">
+                設営中: {deployedCampIds.length} / {selectedField.maxCampCount}箇所
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <p className="text-slate-400 text-[11px]">
+                全{selectedField.officialCamps.length}箇所の候補地から最大{selectedField.maxCampCount}箇所を選択
+              </p>
+              <button
+                onClick={applyRecommendedCamps}
+                className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center space-x-1 underline"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>おすすめ一発適用</span>
+              </button>
+            </div>
+
+            {/* キャンプ候補地スクロールリスト */}
+            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              {selectedField.officialCamps.map(camp => {
+                const isDeployed = deployedCampIds.includes(camp.id);
+                const isSelected = selectedCamp?.id === camp.id;
+
+                return (
+                  <div
+                    key={camp.id}
+                    onClick={() => {
+                      setSelectedCamp(camp);
+                      const parentArea = selectedField.areaNodes.find(a => a.areaNumber === camp.areaNumber);
+                      if (parentArea) setSelectedArea(parentArea);
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-[#1e2538] border-amber-400/80 shadow-sm'
+                        : isDeployed
+                        ? 'bg-sky-950/20 border-sky-500/30'
+                        : 'bg-[#151a26] border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDeployCamp(camp.id);
+                        }}
+                        className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                          isDeployed
+                            ? 'bg-sky-500 border-sky-400 text-slate-950'
+                            : 'border-slate-600 bg-slate-900 hover:border-slate-400'
+                        }`}
+                      >
+                        {isDeployed && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className={`font-bold ${isDeployed ? 'text-white' : 'text-slate-300'}`}>
+                        {camp.name}
+                      </span>
+                      {camp.isRecommended && (
+                        <span className="bg-amber-500/20 text-amber-300 text-[9px] px-1 py-0.2 rounded border border-amber-500/30">
+                          推奨
+                        </span>
+                      )}
+                    </div>
+
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      camp.safety === 'stable' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' :
+                      camp.safety === 'unstable' ? 'bg-amber-950 text-amber-300 border border-amber-500/30' :
+                      'bg-rose-950 text-rose-300 border border-rose-500/30'
+                    }`}>
+                      {camp.safetyLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 選択中のエリア or キャンプ詳細情報パネル */}
+          <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
+            <div className="border-b border-slate-800/80 pb-2.5 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider block">詳細タクティカル情報</span>
+                <h4 className="text-base font-bold text-white">
+                  {selectedCamp ? selectedCamp.name : selectedArea ? `エリア ${selectedArea.areaNumber}：${selectedArea.name}` : 'エリアまたはキャンプを選択'}
+                </h4>
+              </div>
+              {selectedCamp && (
+                <button
+                  onClick={() => toggleDeployCamp(selectedCamp.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    deployedCampIds.includes(selectedCamp.id)
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                      : 'bg-sky-500 hover:bg-sky-400 text-slate-950'
+                  }`}
+                >
+                  {deployedCampIds.includes(selectedCamp.id) ? 'キャンプ撤去' : 'ここに設営'}
+                </button>
               )}
             </div>
 
-            {activePin ? (
-              <div className="mt-4 space-y-3 text-xs">
-                <div className="bg-[#0e121a] p-3 rounded-xl border border-slate-800 text-slate-300 leading-relaxed">
-                  {activePin.description}
+            {selectedCamp ? (
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <div className="bg-[#0e121a] p-3 rounded-xl border border-slate-800 leading-relaxed">
+                  <div className="flex items-center space-x-2 mb-1.5">
+                    <span className="font-bold text-slate-200">位置: {selectedCamp.locationName}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                      selectedCamp.safety === 'stable' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' :
+                      selectedCamp.safety === 'unstable' ? 'bg-amber-950 text-amber-300 border border-amber-500/30' :
+                      'bg-rose-950 text-rose-300 border border-rose-500/30'
+                    }`}>
+                      安全度: {selectedCamp.safetyLabel}
+                    </span>
+                  </div>
+                  <p>{selectedCamp.description}</p>
                 </div>
 
-                {activePin.gimmickEffect && (
-                  <div className="bg-purple-950/20 border border-purple-500/30 p-3 rounded-xl text-purple-200 space-y-1">
-                    <strong className="text-purple-300 block">【ギミック効果】</strong>
-                    <p>{activePin.gimmickEffect}</p>
+                <div className="bg-sky-950/20 border border-sky-500/30 p-2.5 rounded-xl text-[11px] text-sky-200">
+                  <strong className="text-sky-300 block mb-0.5">【簡易キャンプ設営方法】</strong>
+                  現地で候補地を発見後、「キャンプ設営キット」を使用するか、ベースキャンプのアイルー（サポート窓口）に依頼して設営します。破壊されても一定時間後に自動修復されます。
+                </div>
+              </div>
+            ) : selectedArea ? (
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <div className="bg-[#0e121a] p-3 rounded-xl border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-[11px]">地形・特徴</span>
+                    <span className="text-amber-300 font-bold">{selectedArea.terrainLabel}</span>
                   </div>
-                )}
-
-                {activePin.gatheringItems && (
-                  <div className="bg-emerald-950/20 border border-emerald-500/30 p-3 rounded-xl text-emerald-200 space-y-1">
-                    <strong className="text-emerald-300 block">【採取可能アイテム】</strong>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {activePin.gatheringItems.map((item, idx) => (
-                        <span key={idx} className="bg-slate-900 px-2 py-0.5 rounded text-[11px] text-emerald-300 border border-emerald-500/20">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-[11px]">生息・出没モンスター</span>
+                    <span className="text-white font-bold">{selectedArea.monstersFound.join(' / ')}</span>
                   </div>
-                )}
+                </div>
 
-                <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-amber-200 space-y-1">
-                  <strong className="text-amber-300 block">【セクレト移動Tips】</strong>
-                  <p>セクレト騎乗中にマップでピン留めすると、自動操縦でこの地点まで最速ルートで疾走します。</p>
+                <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-[11px] text-amber-200">
+                  <strong className="text-amber-300 block mb-0.5">【セクレト自動操縦】</strong>
+                  マップ上でエリア{selectedArea.areaNumber}を目的地に設定すると、セクレトが自動で最速・最適ルートを疾走します。
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-500 text-xs space-y-2">
-                <Compass className="w-8 h-8 mx-auto text-slate-600 animate-pulse" />
-                <p>左のマップ上に配置された「キャンプ」「罠」「発掘」のピンをクリックすると、ここに詳細な利用手順と効果が表示されます。</p>
+              <div className="py-8 text-center text-slate-500 text-xs space-y-2">
+                <Navigation className="w-7 h-7 mx-auto text-slate-600 animate-pulse" />
+                <p>マップ上のエリア番号または右上のキャンプ一覧をクリックすると、詳細な地形特徴・安全度・モンスター情報が表示されます。</p>
               </div>
             )}
-          </div>
-
-          {/* ベースキャンプ設営クイック一覧 */}
-          <div className="border-t border-slate-800/80 pt-3">
-            <span className="text-[10px] text-slate-400 font-bold block mb-1.5">このフィールドのキャンプ一覧:</span>
-            <div className="space-y-1.5 text-xs">
-              {selectedField.baseCamps.map(camp => (
-                <div key={camp.name} className="flex items-center justify-between bg-[#151a26] p-2 rounded-lg border border-slate-800">
-                  <div className="flex items-center space-x-1.5">
-                    <Tent className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
-                    <span className="font-bold text-slate-200">{camp.name}</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400">エリア{camp.area}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -464,95 +678,6 @@ export const InteractiveMapSection: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* 地図全画面・高解像度拡大モーダル */}
-      {isZoomed && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col p-2 sm:p-4 animate-in fade-in duration-200">
-          {/* モーダルヘッダー */}
-          <div className="flex items-center justify-between px-3 py-2 bg-[#121622] border border-slate-800 rounded-t-xl">
-            <div className="flex items-center space-x-2">
-              <Map className="w-5 h-5 text-amber-400" />
-              <h3 className="text-sm sm:text-base font-bold text-white">
-                【高精細立体地形図】{selectedField.name}（{selectedField.nameEn}）
-              </h3>
-              <span className="hidden sm:inline-block text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
-                {climateInfo.name}
-              </span>
-            </div>
-            <button
-              onClick={() => setIsZoomed(false)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all flex items-center space-x-1"
-            >
-              <X className="w-5 h-5" />
-              <span className="text-xs font-bold pr-1">閉じる</span>
-            </button>
-          </div>
-
-          {/* モーダルマップキャンバス */}
-          <div className="relative flex-1 bg-[#0c0f17] border-x border-b border-slate-800 rounded-b-xl overflow-hidden flex items-center justify-center">
-            <img
-              src={selectedField.mapImageUrl}
-              alt={selectedField.name}
-              className="w-full h-full object-contain select-none"
-            />
-
-            {/* モーダル内ピン配置 */}
-            {filteredPins.map(pin => {
-              const isSelected = activePin?.id === pin.id;
-              const getPinIcon = (type: string) => {
-                switch (type) {
-                  case 'camp': return '🏕️';
-                  case 'gimmick': return '⚡';
-                  case 'gathering': return '💎';
-                  case 'nest': return '🐲';
-                  default: return '📍';
-                }
-              };
-
-              return (
-                <div
-                  key={pin.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-30"
-                  style={{ left: `${pin.coordinates.x}%`, top: `${pin.coordinates.y}%` }}
-                >
-                  <button
-                    onClick={() => setActivePin(pin)}
-                    className={`relative flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-2xl cursor-pointer transition-all hover:scale-125 ${
-                      pin.type === 'camp' ? 'bg-sky-500 text-slate-950 border-white' :
-                      pin.type === 'gimmick' ? 'bg-purple-600 text-white border-white' :
-                      pin.type === 'gathering' ? 'bg-emerald-500 text-slate-950 border-white' :
-                      'bg-rose-600 text-white border-white'
-                    } ${isSelected ? 'ring-4 ring-amber-400 scale-125' : ''}`}
-                    title={pin.name}
-                  >
-                    <span className="text-sm">{getPinIcon(pin.type)}</span>
-                  </button>
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-1.5 py-0.5 rounded bg-black/90 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-lg">
-                    {pin.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 選択中のピン情報下部バー */}
-          {activePin && (
-            <div className="mt-2 bg-[#121622] border border-amber-500/40 p-3 rounded-xl flex items-center justify-between text-xs text-slate-200">
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-amber-300 text-sm">{activePin.name}</span>
-                <span className="text-slate-400">（エリア{activePin.areaNumber}・{activePin.typeLabel}）</span>
-                <span className="hidden sm:inline text-slate-300">: {activePin.description}</span>
-              </div>
-              <button
-                onClick={() => setIsZoomed(false)}
-                className="text-amber-400 hover:underline text-xs whitespace-nowrap font-bold"
-              >
-                詳細パネルで見る →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
