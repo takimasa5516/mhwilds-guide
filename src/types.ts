@@ -214,3 +214,76 @@ export interface CraftableTarget {
     }[];
   }[];
 }
+
+// フィールド地図・環境ギミック型定義
+export type ClimateSeason = 'barren' | 'anomaly' | 'abundant';
+
+export interface MapPin {
+  id: string;
+  type: 'camp' | 'gimmick' | 'gathering' | 'nest';
+  typeLabel: string;
+  areaNumber: number;
+  name: string;
+  description: string;
+  coordinates: { x: number; y: number }; // マップ上の相対座標 % (0-100)
+  gimmickEffect?: string;
+  gatheringItems?: string[];
+  climateCondition?: ClimateSeason | 'all';
+}
+
+export interface FieldArea {
+  areaNumber: number;
+  name: string;
+  description: string;
+  monstersFound: string[];
+  features: string[];
+}
+
+export interface FieldMapData {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  climates: {
+    barren: {
+      name: string;
+      description: string;
+      activeMonsters: string[];
+      environmentalHazard: string;
+    };
+    anomaly: {
+      name: string;
+      description: string;
+      activeMonsters: string[];
+      environmentalHazard: string;
+      specialGimmick: string;
+    };
+    abundant: {
+      name: string;
+      description: string;
+      activeMonsters: string[];
+      environmentalHazard?: string;
+      specialGathering: string;
+    };
+  };
+  baseCamps: {
+    name: string;
+    area: number;
+    unlockRequirement: string;
+    description: string;
+  }[];
+  environmentalGimmicks: {
+    name: string;
+    area: number;
+    effect: string;
+    howToTrigger: string;
+  }[];
+  gatheringHotspots: {
+    category: '太古の破片・アーティア素材' | '鉱石・結晶' | '特産品・ハチミツ' | 'スリンガー弾・環境生物';
+    area: number;
+    items: string[];
+    tips: string;
+  }[];
+  areas: FieldArea[];
+  mapPins: MapPin[];
+}

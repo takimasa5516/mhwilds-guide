@@ -8,10 +8,11 @@ import { MonsterDatabaseSection } from './components/MonsterDatabaseSection';
 import { QuestMissionsSection } from './components/QuestMissionsSection';
 import { MaterialCalculatorSection } from './components/MaterialCalculatorSection';
 import { ArtianTalismanSection } from './components/ArtianTalismanSection';
+import { InteractiveMapSection } from './components/InteractiveMapSection';
 import { SearchResultsModal } from './components/SearchResultsModal';
 import { Footer } from './components/Footer';
 import { WeaponType } from './types';
-import { Flame, Swords, Crosshair, Shield, Compass, Calculator, Gem } from 'lucide-react';
+import { Flame, Swords, Crosshair, Shield, Compass, Calculator, Gem, Map } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('meta');
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
     { id: 'meta', label: '環境メタ', icon: Flame },
     { id: 'weapons', label: '最強装備', icon: Swords },
     { id: 'materials', label: '討伐計算', icon: Calculator },
+    { id: 'map', label: '地図', icon: Map },
     { id: 'artian', label: 'アーティア', icon: Gem },
     { id: 'monsters', label: '図鑑', icon: Shield },
     { id: 'quests', label: 'クエスト', icon: Compass },
@@ -65,6 +67,10 @@ export const App: React.FC = () => {
 
         {activeTab === 'materials' && (
           <MaterialCalculatorSection />
+        )}
+
+        {activeTab === 'map' && (
+          <InteractiveMapSection />
         )}
 
         {activeTab === 'artian' && (

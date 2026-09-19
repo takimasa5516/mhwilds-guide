@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, Shield, Swords, Compass, Search, Menu, X, Crosshair, Calculator, Gem } from 'lucide-react';
+import { Flame, Shield, Swords, Compass, Search, Menu, X, Crosshair, Calculator, Gem, Map } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -20,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'meta', label: '攻略環境・メタ', icon: Flame, badge: '注目' },
     { id: 'weapons', label: '武器種別・最新最強装備', icon: Swords, badge: '全14種' },
     { id: 'materials', label: '素材・討伐数計算機', icon: Calculator, badge: 'シミュ' },
+    { id: 'map', label: 'フィールド立体地図', icon: Map, badge: '気候連動' },
     { id: 'artian', label: 'アーティア・護石', icon: Gem, badge: '神おま' },
     { id: 'monsters', label: 'モンスター図鑑＆弱点', icon: Shield, badge: '全20体' },
     { id: 'quests', label: 'メイン・サブ攻略', icon: Compass, badge: 'チャート' },

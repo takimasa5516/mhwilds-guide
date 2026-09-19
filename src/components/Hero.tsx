@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Sparkles, Target, ShieldAlert, Award, Calculator, Gem } from 'lucide-react';
+import { Flame, Sparkles, Target, ShieldAlert, Award, Calculator, Gem, Map } from 'lucide-react';
 
 interface HeroProps {
   onNavigate: (tab: string) => void;
@@ -19,7 +19,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
         {/* アップデートタグ */}
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-4 shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-          <span>白熾龍ゾ・シア＆古代遺構アーティア・神おま最新環境アップデート完了</span>
+          <span>全フィールド立体地図＆気候変動シミュレーター・討伐数計算機完備</span>
         </div>
 
         {/* メインタイトル */}
@@ -30,16 +30,17 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
               MONSTER HUNTER WILDS
             </span>
             <span className="text-lg sm:text-2xl text-slate-300 block font-normal mt-1">
-              総合攻略・最新最強装備・討伐シミュレーター
+              総合攻略・最新最強装備・立体フィールドマップ
             </span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-            「集中モード」と「傷口破壊」が支配する最新環境、全14武器種の白熾龍ゾ・シア＆アーティア複合キメラ、
-            5属性特化装備、全20体モンスターの弱点・肉質、ウィッシュリスト必要討伐数シミュレーターを完全網羅。
+            「集中モード」と「傷口破壊」が支配する最新環境、全14武器種の最新キメラ装備、
+            全20体モンスターの肉質・弱点、気候変動（荒廃期・異常気象・豊穣期）対応立体地図、
+            全武器対応の必要討伐数シミュレーターを完全網羅。
           </p>
         </div>
 
-        {/* クイック統計・ハイライトバナー（6グリッド） */}
+        {/* クイック統計・ハイライトバナー */}
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <div 
             onClick={() => onNavigate('weapons')}
@@ -49,8 +50,20 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
               <Award className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-bold">最強装備</span>
             </div>
-            <div className="text-xs text-slate-200 font-bold">ゾ・シア＆アーティア</div>
+            <div className="text-xs text-slate-200 font-bold">全14武器種</div>
             <div className="text-[10px] text-slate-400 mt-0.5">最新Tier SSテンプレ</div>
+          </div>
+
+          <div 
+            onClick={() => onNavigate('map')}
+            className="cursor-pointer bg-[#141824]/90 hover:bg-[#1b2233] border border-cyan-500/40 hover:border-cyan-400 p-3 rounded-xl transition-all group shadow-sm bg-gradient-to-b from-cyan-500/10 to-transparent"
+          >
+            <div className="flex items-center space-x-1.5 text-cyan-400 mb-1">
+              <Map className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold">立体地図</span>
+            </div>
+            <div className="text-xs text-cyan-200 font-bold">全フィールド地図</div>
+            <div className="text-[10px] text-cyan-300/80 mt-0.5">気候変動＆キャンプ罠</div>
           </div>
 
           <div 
@@ -62,7 +75,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
               <span className="text-xs font-bold">討伐数計算機</span>
             </div>
             <div className="text-xs text-amber-200 font-bold">必要討伐シミュ</div>
-            <div className="text-[10px] text-amber-300/80 mt-0.5">確率二項分布で90%安心</div>
+            <div className="text-[10px] text-amber-300/80 mt-0.5">全14武器種完全対応</div>
           </div>
 
           <div 
@@ -87,18 +100,6 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
             </div>
             <div className="text-xs text-slate-200 font-bold">全20体完全網羅</div>
             <div className="text-[10px] text-slate-400 mt-0.5">ゾ・シア・弱点・肉質</div>
-          </div>
-
-          <div 
-            onClick={() => onNavigate('combos')}
-            className="cursor-pointer bg-[#141824]/90 hover:bg-[#1b2233] border border-[#2b354c] hover:border-amber-500/50 p-3 rounded-xl transition-all group shadow-sm"
-          >
-            <div className="flex items-center space-x-1.5 text-emerald-400 mb-1">
-              <Target className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">立ち回り指南</span>
-            </div>
-            <div className="text-xs text-slate-200 font-bold">相殺＆集中弱点</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">操作アドバンテージ</div>
           </div>
 
           <div 
