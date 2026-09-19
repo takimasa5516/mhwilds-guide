@@ -277,6 +277,7 @@ export interface FieldMapData {
   description: string;
   maxCampCount: number; // 同時設営上限数（例: 砂原:5, 緋の森:5, 油涌き谷:6）
   availableLayers?: { id: string; name: string }[];
+  mapImages: { [layerId: string]: string };
   climates: {
     barren: {
       name: string;

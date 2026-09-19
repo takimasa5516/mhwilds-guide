@@ -1,4 +1,4 @@
-﻿import { FieldMapData } from '../types';
+import { FieldMapData } from '../types';
 
 export const fieldsMapData: FieldMapData[] = [
   // ==========================================
@@ -16,6 +16,11 @@ export const fieldsMapData: FieldMapData[] = [
       { id: 'surface', name: '地表（砂丘・草原・オアシス）' },
       { id: 'underground', name: '地下（鉱石洞窟・水脈洞）' }
     ],
+    mapImages: {
+      all: 'images/maps/windward_plains_surface.png',
+      surface: 'images/maps/windward_plains_surface.png',
+      underground: 'images/maps/windward_plains_underground.png'
+    },
     climates: {
       barren: {
         name: '荒廃期（砂風期）',
@@ -46,7 +51,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア3 南部',
         safety: 'unstable',
         safetyLabel: '不安定',
-        coordinates: { x: 38, y: 28 },
+        coordinates: { x: 42, y: 27 },
         description: '北部のベースキャンプから平原へと下る中継点。ドシャグマの徘徊ルートに近いためモンスターが接近すると破壊される恐れあり。'
       },
       {
@@ -56,7 +61,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア4 鉱石洞窟',
         safety: 'stable',
         safetyLabel: '安全',
-        coordinates: { x: 20, y: 44 },
+        coordinates: { x: 25, y: 33 },
         description: '地下の鉱石採掘場に面した洞窟内キャンプ。大型モンスターが侵入できない地形のため安全度が最も高く、序盤〜終盤まで必須。',
         isRecommended: true
       },
@@ -67,7 +72,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア4 西部',
         safety: 'dangerous',
         safetyLabel: '要注意（危険）',
-        coordinates: { x: 14, y: 52 },
+        coordinates: { x: 20, y: 36 },
         description: '西側の崖下通路。モンスターの通り道となっており、頻繁に破壊されるリスクがある。'
       },
       {
@@ -77,7 +82,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア6 谷の隠れ家',
         safety: 'stable',
         safetyLabel: '安全',
-        coordinates: { x: 50, y: 46 },
+        coordinates: { x: 37, y: 45 },
         description: '岩山の裂け目にある隠れ家。中央部の全エリア（5, 7, 8, 9）へ直通する絶好のファストトラベル拠点。安全度も高く最優先設営推奨。',
         isRecommended: true
       },
@@ -88,7 +93,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア8 南西部',
         safety: 'dangerous',
         safetyLabel: '要注意（危険）',
-        coordinates: { x: 62, y: 38 },
+        coordinates: { x: 73, y: 36 },
         description: '砂丘の窪地。バーラハーラの潜行エリアに隣接し、危険度が高い。'
       },
       {
@@ -98,7 +103,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア8 南東部',
         safety: 'dangerous',
         safetyLabel: '要注意（危険）',
-        coordinates: { x: 74, y: 42 },
+        coordinates: { x: 76, y: 40 },
         description: '砂岩の影にあるが、レ・ダウが着地する広場に近いため破壊されやすい。'
       },
       {
@@ -108,7 +113,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア9 見晴らし丘',
         safety: 'unstable',
         safetyLabel: '不安定',
-        coordinates: { x: 42, y: 65 },
+        coordinates: { x: 46, y: 53 },
         description: '流砂盆地を見下ろす丘の上。流砂ギミックへのアクセスが良く、狩猟中のリスポーン地点として優秀。'
       },
       {
@@ -118,7 +123,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア10 南東部',
         safety: 'dangerous',
         safetyLabel: '要注意（危険）',
-        coordinates: { x: 80, y: 56 },
+        coordinates: { x: 60, y: 48 },
         description: '荒涼とした砂漠エリア。周囲に見通しが良いがモンスターの奇襲を受けやすい。'
       },
       {
@@ -128,7 +133,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア13 オアシス',
         safety: 'dangerous',
         safetyLabel: '要注意（危険）',
-        coordinates: { x: 70, y: 72 },
+        coordinates: { x: 33, y: 65 },
         description: '水と緑が豊かな大オアシス。水辺モンスターが集結するため危険度は高いが、採取や釣り、南部狩猟に絶対欠かせない重要キャンプ。',
         isRecommended: true
       },
@@ -139,7 +144,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア13 西部',
         safety: 'unstable',
         safetyLabel: '不安定',
-        coordinates: { x: 60, y: 75 },
+        coordinates: { x: 29, y: 68 },
         description: 'オアシス西の岩場陰。オアシス直結のサブキャンプとして利用可能。'
       },
       {
@@ -149,7 +154,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア14 地下水脈',
         safety: 'stable',
         safetyLabel: '安全',
-        coordinates: { x: 30, y: 82 },
+        coordinates: { x: 58, y: 71 },
         description: '砂漠の下を流れる清らかな地下水脈の洞窟。モンスターが入れない安全地帯で、古代遺跡・アーティア採掘ルートに直結。',
         isRecommended: true
       },
@@ -160,7 +165,7 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア16 北西部',
         safety: 'unstable',
         safetyLabel: '不安定',
-        coordinates: { x: 78, y: 84 },
+        coordinates: { x: 79, y: 85 },
         description: '最果ての骨砂漠へ通じる岩間。大型竜の骨塚採取に便利。'
       },
       {
@@ -170,28 +175,28 @@ export const fieldsMapData: FieldMapData[] = [
         locationName: 'エリア16 骨砂漠',
         safety: 'unstable',
         safetyLabel: '不安定',
-        coordinates: { x: 88, y: 88 },
+        coordinates: { x: 84, y: 87 },
         description: '巨大モンスターの白骨が散乱する最果ての地。古龍や強大モンスターが逃走・睡眠する場所の直近。',
         isRecommended: true
       }
     ],
     areaNodes: [
-      { areaNumber: 1, name: 'ベースキャンプ前哨', x: 48, y: 12, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '平原・出撃口', monstersFound: ['草食竜', '小型鳥竜'] },
-      { areaNumber: 2, name: '乾燥低地', x: 32, y: 18, radius: 22, elevation: 'surface', terrainType: 'desert', terrainLabel: '砂利地帯', monstersFound: ['ケマトリス'] },
-      { areaNumber: 3, name: '風衝岩場', x: 40, y: 28, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '岩峰群', monstersFound: ['チャタカブラ', 'ドシャグマ'] },
-      { areaNumber: 4, name: '鉱石大洞窟', x: 22, y: 44, radius: 26, elevation: 'underground', terrainType: 'cave', terrainLabel: '地下鍾乳洞', monstersFound: ['チャタカブラ', '鉱石群'] },
-      { areaNumber: 5, name: '避雷針の岩柱群', x: 36, y: 48, radius: 26, elevation: 'surface', terrainType: 'desert', terrainLabel: '落雷尖塔帯', monstersFound: ['雷迅竜レ・ダウ', 'ドシャグマ'] },
-      { areaNumber: 6, name: '谷の回廊', x: 50, y: 46, radius: 22, elevation: 'surface', terrainType: 'cave', terrainLabel: '峡谷の隠れ谷', monstersFound: ['プケプケ'] },
-      { areaNumber: 7, name: '中央砂丘', x: 64, y: 32, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '大砂丘', monstersFound: ['バーラハーラ', 'ドシャグマ'] },
-      { areaNumber: 8, name: '風蝕高台', x: 74, y: 40, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '突風台地', monstersFound: ['雷迅竜レ・ダウ'] },
-      { areaNumber: 9, name: '底なし流砂地', x: 44, y: 64, radius: 28, elevation: 'surface', terrainType: 'desert', terrainLabel: '流砂盆地', monstersFound: ['バーラハーラ', 'ドシャグマ'] },
-      { areaNumber: 10, name: '南東荒野', x: 76, y: 56, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '白熱岩石帯', monstersFound: ['アルシュベルド'] },
-      { areaNumber: 11, name: '古代崩落路', x: 34, y: 70, radius: 22, elevation: 'underground', terrainType: 'cave', terrainLabel: '崩落洞窟', monstersFound: ['化石・破片'] },
-      { areaNumber: 12, name: '古代要塞遺構', x: 22, y: 68, radius: 24, elevation: 'underground', terrainType: 'ruins', terrainLabel: '古代壁・アーティア', monstersFound: ['太古の破片採掘'] },
-      { areaNumber: 13, name: '大オアシス湖', x: 68, y: 72, radius: 30, elevation: 'surface', terrainType: 'oasis', terrainLabel: '水源・ヤシ群生', monstersFound: ['草食竜群', '水辺生物'] },
-      { areaNumber: 14, name: '清冽の地下水脈', x: 30, y: 84, radius: 24, elevation: 'underground', terrainType: 'water', terrainLabel: '地下水脈・釣り場', monstersFound: ['特産魚', '鉱脈'] },
-      { areaNumber: 15, name: '風鳴りの砂道', x: 52, y: 82, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '風鳴り砂谷', monstersFound: ['ケマトリス'] },
-      { areaNumber: 16, name: '最果ての骨砂漠', x: 84, y: 86, radius: 28, elevation: 'surface', terrainType: 'desert', terrainLabel: '巨骨群・寝床', monstersFound: ['レ・ダウ（寝床）', 'アルシュベルド'] }
+      { areaNumber: 1, name: 'ベースキャンプ前哨', x: 50, y: 22, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '平原・出撃口', monstersFound: ['草食竜', '小型鳥竜'] },
+      { areaNumber: 2, name: '乾燥低地', x: 33, y: 20, radius: 22, elevation: 'surface', terrainType: 'desert', terrainLabel: '砂利地帯', monstersFound: ['ケマトリス'] },
+      { areaNumber: 3, name: '風衝岩場', x: 42, y: 28, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '岩峰群', monstersFound: ['チャタカブラ', 'ドシャグマ'] },
+      { areaNumber: 4, name: '鉱石大洞窟', x: 26, y: 32, radius: 26, elevation: 'underground', terrainType: 'cave', terrainLabel: '地下鍾乳洞', monstersFound: ['チャタカブラ', '鉱石群'] },
+      { areaNumber: 5, name: '避雷針の岩柱群', x: 45, y: 38, radius: 26, elevation: 'surface', terrainType: 'desert', terrainLabel: '落雷尖塔帯', monstersFound: ['雷迅竜レ・ダウ', 'ドシャグマ'] },
+      { areaNumber: 6, name: '谷の回廊', x: 37, y: 44, radius: 22, elevation: 'surface', terrainType: 'cave', terrainLabel: '峡谷の隠れ谷', monstersFound: ['プケプケ'] },
+      { areaNumber: 7, name: '中央砂丘', x: 67, y: 27, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '大砂丘', monstersFound: ['バーラハーラ', 'ドシャグマ'] },
+      { areaNumber: 8, name: '風蝕高台', x: 74, y: 34, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '突風台地', monstersFound: ['雷迅竜レ・ダウ'] },
+      { areaNumber: 9, name: '底なし流砂地', x: 47, y: 52, radius: 28, elevation: 'surface', terrainType: 'desert', terrainLabel: '流砂盆地', monstersFound: ['バーラハーラ', 'ドシャグマ'] },
+      { areaNumber: 10, name: '南東荒野', x: 58, y: 47, radius: 25, elevation: 'surface', terrainType: 'desert', terrainLabel: '白熱岩石帯', monstersFound: ['アルシュベルド'] },
+      { areaNumber: 11, name: '古代崩落路', x: 34, y: 50, radius: 22, elevation: 'underground', terrainType: 'cave', terrainLabel: '崩落洞窟', monstersFound: ['化石・破片'] },
+      { areaNumber: 12, name: '古代要塞遺構', x: 23, y: 38, radius: 24, elevation: 'underground', terrainType: 'ruins', terrainLabel: '古代壁・アーティア', monstersFound: ['太古の破片採掘'] },
+      { areaNumber: 13, name: '大オアシス湖', x: 33, y: 66, radius: 30, elevation: 'surface', terrainType: 'oasis', terrainLabel: '水源・ヤシ群生', monstersFound: ['草食竜群', '水辺生物'] },
+      { areaNumber: 14, name: '清冽の地下水脈', x: 58, y: 71, radius: 24, elevation: 'underground', terrainType: 'water', terrainLabel: '地下水脈・釣り場', monstersFound: ['特産魚', '鉱脈'] },
+      { areaNumber: 15, name: '風鳴りの砂道', x: 56, y: 76, radius: 24, elevation: 'surface', terrainType: 'desert', terrainLabel: '風鳴り砂谷', monstersFound: ['ケマトリス'] },
+      { areaNumber: 16, name: '最果ての骨砂漠', x: 83, y: 88, radius: 28, elevation: 'surface', terrainType: 'desert', terrainLabel: '巨骨群・寝床', monstersFound: ['レ・ダウ（寝床）', 'アルシュベルド'] }
     ],
     connections: [
       { from: 1, to: 2 }, { from: 1, to: 3 }, { from: 2, to: 3 }, { from: 2, to: 4 },
@@ -266,6 +271,12 @@ export const fieldsMapData: FieldMapData[] = [
       { id: 'middle', name: '中層（花咲く岩場・大樹林）' },
       { id: 'lower', name: '下層（洞窟湖・河床）' }
     ],
+    mapImages: {
+      all: 'images/maps/scarlet_forest_upper.png',
+      upper: 'images/maps/scarlet_forest_upper.png',
+      middle: 'images/maps/scarlet_forest_upper.png',
+      lower: 'images/maps/scarlet_forest_lower.png'
+    },
     climates: {
       barren: {
         name: '荒廃期（静謐期・渇水）',
@@ -496,6 +507,12 @@ export const fieldsMapData: FieldMapData[] = [
       { id: 'middle', name: '中層（製錬所・油泥地帯）' },
       { id: 'lower', name: '下層（鍾乳洞・鉱脈洞窟）' }
     ],
+    mapImages: {
+      all: 'images/maps/oilwell_basin_upper.png',
+      upper: 'images/maps/oilwell_basin_upper.png',
+      middle: 'images/maps/oilwell_basin_mid.png',
+      lower: 'images/maps/oilwell_basin_lower.png'
+    },
     climates: {
       barren: {
         name: '荒廃期（油泥沈静）',
@@ -675,6 +692,9 @@ export const fieldsMapData: FieldMapData[] = [
     availableLayers: [
       { id: 'all', name: '全層統合マップ' }
     ],
+    mapImages: {
+      all: 'images/maps/wyveria_forbidden.png'
+    },
     climates: {
       barren: {
         name: '荒廃期（静寂の白都）',

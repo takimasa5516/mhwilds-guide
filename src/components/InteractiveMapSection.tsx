@@ -3,7 +3,8 @@ import { fieldsMapData } from '../data/mapsData';
 import { FieldMapData, ClimateSeason, OfficialCampSpot, AreaTopologyNode } from '../types';
 import { 
   Map, Tent, Zap, Sparkles, Compass, Eye, AlertTriangle, Droplets, 
-  Flame, Wind, Layers, ChevronRight, CheckCircle2, RotateCcw, Navigation
+  Flame, Wind, Layers, ChevronRight, CheckCircle2, RotateCcw, Navigation,
+  Maximize2, X
 } from 'lucide-react';
 
 export const InteractiveMapSection: React.FC = () => {
@@ -13,6 +14,12 @@ export const InteractiveMapSection: React.FC = () => {
   const [selectedArea, setSelectedArea] = useState<AreaTopologyNode | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<OfficialCampSpot | null>(null);
   
+  // ピンフィルター（'all' | 'camps' | 'areas'）
+  const [pinFilter, setPinFilter] = useState<'all' | 'camps' | 'areas'>('all');
+  
+  // 拡大モーダル
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState<boolean>(false);
+
   // 設営中キャンプID（最大上限数まで管理）
   const [deployedCampIds, setDeployedCampIds] = useState<string[]>([]);
 
@@ -53,11 +60,27 @@ export const InteractiveMapSection: React.FC = () => {
     setDeployedCampIds(recommended);
   };
 
-  // 階層フィルター
+  // 階層フィルター適用ノード
   const visibleNodes = selectedField.areaNodes.filter(node => {
     if (selectedLayer === 'all') return true;
     return node.elevation === selectedLayer || node.elevation === 'all';
   });
+
+  // 公式ゲーム内マップ画像URL解決
+  const getMapImageUrl = (layer: string = selectedLayer) => {
+    const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+    const layerPath = selectedField.mapImages[layer] || selectedField.mapImages['all'] || Object.values(selectedField.mapImages)[0];
+    return `${base}${layerPath}`;
+  };
+
+  const getSafetyBadgeStyle = (safety: string) => {
+    switch (safety) {
+      case 'stable': return 'border-emerald-400 bg-emerald-500 text-slate-950 shadow-emerald-500/50';
+      case 'unstable': return 'border-amber-400 bg-amber-500 text-slate-950 shadow-amber-500/50';
+      case 'dangerous': return 'border-rose-400 bg-rose-500 text-white shadow-rose-500/50';
+      default: return 'border-slate-400 bg-slate-500 text-white';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -66,13 +89,13 @@ export const InteractiveMapSection: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
             <Map className="w-4 h-4" />
-            <span>Interactive Field & Climate Map</span>
+            <span>Official In-Game Field & Climate Map</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-            全フィールド立体地図 ＆ 気候変動・環境ギミック攻略
+            公式立体フィールド地図 ＆ 簡易キャンプ設営シミュレーター
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-            「荒廃期」「異常気象」「豊穣期」で激変するフィールド環境、簡易キャンプ設営地、落雷・ダム・ガス罠、アーティア発掘ルートを網羅
+            ゲーム内の公式全体マップテクスチャを完全実装。「荒廃期」「異常気象」「豊穣期」で激変するフィールド環境と、簡易キャンプ設営（安全度3段階）を攻略
           </p>
         </div>
 
@@ -200,213 +223,148 @@ export const InteractiveMapSection: React.FC = () => {
         </div>
       </div>
 
-      {/* インタラクティブ・ビジュアルマップ ＆ 詳細パネル */}
       {/* メインマップエリア ＆ 設営シミュレーター */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* 左側（7/12）：公式トポロジー・SVGタクティカルマップ */}
+        {/* 左側（7/12）：公式高精細ゲーム内立体マップ */}
         <div className="lg:col-span-7 bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
             <div>
               <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider block">
-                Official Area Topology
+                Official In-Game Map
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-white">
-                {selectedField.name} 公式エリア全体図
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
+                <span>{selectedField.name} 公式立体全体図</span>
               </h3>
             </div>
 
-            {/* 階層レイヤー切り替え */}
-            {selectedField.availableLayers && (
+            {/* 階層レイヤー ＆ 表示フィルター */}
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedField.availableLayers && (
+                <div className="flex items-center bg-[#0e121a] p-1 rounded-lg border border-slate-800 text-xs">
+                  {selectedField.availableLayers.map(layer => (
+                    <button
+                      key={layer.id}
+                      onClick={() => setSelectedLayer(layer.id)}
+                      className={`px-2 py-1 rounded text-[11px] font-bold transition-all ${
+                        selectedLayer === layer.id
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {layer.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* ピントグル */}
               <div className="flex items-center bg-[#0e121a] p-1 rounded-lg border border-slate-800 text-xs">
-                {selectedField.availableLayers.map(layer => (
-                  <button
-                    key={layer.id}
-                    onClick={() => setSelectedLayer(layer.id)}
-                    className={`px-2 py-1 rounded text-[11px] font-bold transition-all ${
-                      selectedLayer === layer.id
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {layer.name}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setPinFilter('all')}
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                    pinFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="すべて表示"
+                >
+                  全ピン
+                </button>
+                <button
+                  onClick={() => setPinFilter('camps')}
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                    pinFilter === 'camps' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="簡易キャンプのみ表示"
+                >
+                  🏕️ キャンプ
+                </button>
+                <button
+                  onClick={() => setPinFilter('areas')}
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                    pinFilter === 'areas' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="エリア番号のみ表示"
+                >
+                  🔢 エリア
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* SVG タクティカルマップ */}
-          <div className="relative w-full aspect-[4/3] bg-[#090d14] rounded-xl border border-slate-800 overflow-hidden shadow-inner flex items-center justify-center select-none">
-            {/* 方眼グリッド背景 */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d25_1px,transparent_1px),linear-gradient(to_bottom,#1f293d25_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none"></div>
+          {/* 公式ゲーム内マップキャンバス */}
+          <div className="relative w-full aspect-[4/3] bg-[#16120c] rounded-xl border border-amber-950/40 overflow-hidden shadow-2xl flex items-center justify-center select-none group">
+            {/* カプコン公式ゲーム内マップテクスチャ */}
+            <img
+              src={getMapImageUrl()}
+              alt={`${selectedField.name} 公式マップ`}
+              className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] select-none pointer-events-none transition-opacity duration-300"
+            />
+
+            {/* 気候オーラオーバーレイ */}
+            {selectedClimate === 'anomaly' && (
+              <div className="absolute inset-0 bg-gradient-to-t from-purple-950/35 via-purple-900/10 to-indigo-950/20 pointer-events-none mix-blend-color-dodge animate-pulse"></div>
+            )}
+            {selectedClimate === 'abundant' && (
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/25 via-transparent to-amber-900/15 pointer-events-none mix-blend-screen"></div>
+            )}
+
+            {/* ズーム拡大ボタン */}
+            <button
+              onClick={() => setIsZoomModalOpen(true)}
+              className="absolute top-3 left-3 bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 text-slate-200 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-lg transition-all z-30"
+              title="地図を高解像度で全画面拡大"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>🔍 全画面拡大</span>
+            </button>
 
             {/* コンパスローズ装飾 */}
-            <div className="absolute top-3 right-3 text-slate-700 pointer-events-none flex flex-col items-center">
-              <span className="text-[10px] font-black text-amber-500/60 mb-0.5">N</span>
-              <Compass className="w-6 h-6 opacity-30 text-amber-400" />
+            <div className="absolute top-3 right-3 text-slate-700 pointer-events-none flex flex-col items-center z-20">
+              <span className="text-[10px] font-black text-amber-500/80 mb-0.5">N</span>
+              <Compass className="w-6 h-6 opacity-40 text-amber-400" />
             </div>
 
-            {/* SVG キャンバス */}
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 1000 800"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <defs>
-                <radialGradient id="desertGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#d97706" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#78350f" stopOpacity="0.1" />
-                </radialGradient>
-                <radialGradient id="waterGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#0369a1" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="caveGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#475569" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#1e293b" stopOpacity="0.2" />
-                </radialGradient>
-                <radialGradient id="forestGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#15803d" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#14532d" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="volcanoGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#dc2626" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#991b1b" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="ruinsGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#9333ea" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#581c87" stopOpacity="0.15" />
-                </radialGradient>
-              </defs>
-
-              {/* 1. エリア接続ルート（ライン） */}
-              {selectedField.connections.map((conn, idx) => {
-                const nodeFrom = selectedField.areaNodes.find(n => n.areaNumber === conn.from);
-                const nodeTo = selectedField.areaNodes.find(n => n.areaNumber === conn.to);
-                if (!nodeFrom || !nodeTo) return null;
-
-                const x1 = (nodeFrom.x * 10);
-                const y1 = (nodeFrom.y * 8);
-                const x2 = (nodeTo.x * 10);
-                const y2 = (nodeTo.y * 8);
-
-                return (
-                  <line
-                    key={idx}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke="#475569"
-                    strokeWidth="3"
-                    strokeDasharray="6 4"
-                    strokeLinecap="round"
-                    opacity="0.6"
-                  />
-                );
-              })}
-
-              {/* 2. エリアノード（円形領土） */}
-              {visibleNodes.map(node => {
-                const isSelected = selectedArea?.areaNumber === node.areaNumber;
-                const cx = node.x * 10;
-                const cy = node.y * 8;
-                const r = node.radius * 2.2;
-
-                const getGradId = () => {
-                  switch (node.terrainType) {
-                    case 'oasis':
-                    case 'water': return 'url(#waterGrad)';
-                    case 'cave': return 'url(#caveGrad)';
-                    case 'forest': return 'url(#forestGrad)';
-                    case 'volcano':
-                    case 'oil': return 'url(#volcanoGrad)';
-                    case 'ruins': return 'url(#ruinsGrad)';
-                    default: return 'url(#desertGrad)';
-                  }
-                };
-
-                const getStrokeColor = () => {
-                  if (isSelected) return '#fbbf24';
-                  switch (node.terrainType) {
-                    case 'oasis':
-                    case 'water': return '#38bdf8';
-                    case 'cave': return '#94a3b8';
-                    case 'forest': return '#4ade80';
-                    case 'volcano':
-                    case 'oil': return '#f87171';
-                    case 'ruins': return '#c084fc';
-                    default: return '#f59e0b';
-                  }
-                };
-
-                return (
-                  <g
-                    key={node.areaNumber}
+            {/* エリア番号タクティカルバッジ */}
+            {(pinFilter === 'all' || pinFilter === 'areas') && visibleNodes.map(node => {
+              const isSelected = selectedArea?.areaNumber === node.areaNumber;
+              return (
+                <div
+                  key={node.areaNumber}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10 group/area"
+                  style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                >
+                  <button
                     onClick={() => {
                       setSelectedArea(node);
                       setSelectedCamp(null);
                     }}
-                    className="cursor-pointer transition-transform hover:scale-105"
+                    className={`relative flex items-center justify-center rounded-full font-mono font-black transition-all ${
+                      isSelected
+                        ? 'w-8 h-8 bg-amber-500 text-slate-950 border-2 border-white ring-4 ring-amber-400/60 shadow-2xl scale-125 z-20'
+                        : 'w-6 h-6 bg-slate-950/85 hover:bg-slate-900 text-amber-300 border border-amber-500/60 hover:border-amber-300 hover:scale-115 shadow-lg backdrop-blur-sm'
+                    }`}
+                    title={`エリア${node.areaNumber}：${node.name}`}
                   >
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={r}
-                      fill={getGradId()}
-                      stroke={getStrokeColor()}
-                      strokeWidth={isSelected ? '3.5' : '1.5'}
-                      strokeDasharray={node.elevation === 'underground' || node.elevation === 'lower' ? '4 3' : 'none'}
-                    />
+                    <span className="text-[11px] font-black">{node.areaNumber}</span>
+                  </button>
 
-                    <text
-                      x={cx}
-                      y={cy - 4}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill="#ffffff"
-                      fontSize="22"
-                      fontWeight="900"
-                      className="font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                    >
-                      {node.areaNumber}
-                    </text>
+                  {/* ホバー吹き出し */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none opacity-0 group-hover/area:opacity-100 transition-opacity z-40">
+                    エリア{node.areaNumber}：{node.name}
+                  </div>
+                </div>
+              );
+            })}
 
-                    <text
-                      x={cx}
-                      y={cy + 18}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill={isSelected ? '#fbbf24' : '#cbd5e1'}
-                      fontSize="10"
-                      fontWeight="bold"
-                      className="drop-shadow"
-                    >
-                      {node.name.length > 7 ? `${node.name.slice(0, 6)}..` : node.name}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* 3. HTMLオーバーレイ：簡易キャンプ設営ピン */}
-            {selectedField.officialCamps.map(camp => {
+            {/* 簡易キャンプ設営ピン */}
+            {(pinFilter === 'all' || pinFilter === 'camps') && selectedField.officialCamps.map(camp => {
               const isDeployed = deployedCampIds.includes(camp.id);
               const isSelected = selectedCamp?.id === camp.id;
-              
-              const getSafetyBadgeStyle = () => {
-                switch (camp.safety) {
-                  case 'stable': return 'border-emerald-400 bg-emerald-500 text-slate-950 shadow-emerald-500/50';
-                  case 'unstable': return 'border-amber-400 bg-amber-500 text-slate-950 shadow-amber-500/50';
-                  case 'dangerous': return 'border-rose-400 bg-rose-500 text-white shadow-rose-500/50';
-                }
-              };
 
               return (
                 <div
                   key={camp.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 group"
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 group/camp"
                   style={{ left: `${camp.coordinates.x}%`, top: `${camp.coordinates.y}%` }}
                 >
                   <button
@@ -415,22 +373,23 @@ export const InteractiveMapSection: React.FC = () => {
                       const parentArea = selectedField.areaNodes.find(a => a.areaNumber === camp.areaNumber);
                       if (parentArea) setSelectedArea(parentArea);
                     }}
-                    className={`relative flex items-center justify-center rounded-full border shadow-lg transition-all ${
+                    className={`relative flex items-center justify-center rounded-full border shadow-xl transition-all ${
                       isDeployed
-                        ? 'w-7 h-7 bg-sky-500 border-white text-slate-950 ring-2 ring-sky-400/80 scale-110'
-                        : `w-5 h-5 ${getSafetyBadgeStyle()} opacity-80 hover:opacity-100 hover:scale-125`
+                        ? 'w-7 h-7 bg-sky-500 border-white text-slate-950 ring-2 ring-sky-300 shadow-sky-500/60 scale-115'
+                        : `w-5 h-5 ${getSafetyBadgeStyle(camp.safety)} opacity-85 hover:opacity-100 hover:scale-125`
                     } ${isSelected ? 'ring-4 ring-amber-400 scale-125 z-30' : ''}`}
                     title={`${camp.name}（${camp.safetyLabel}）${isDeployed ? '【設営中】' : '【未設営】'}`}
                   >
                     {isDeployed ? (
-                      <Tent className="w-4 h-4" />
+                      <Tent className="w-3.5 h-3.5" />
                     ) : (
                       <span className="text-[9px] font-black leading-none">C</span>
                     )}
                   </button>
 
-                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none transition-all ${
-                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
+                  {/* ホバー吹き出し */}
+                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none transition-all z-40 ${
+                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover/camp:opacity-100 group-hover/camp:scale-100'
                   }`}>
                     {camp.name}
                     <span className={`ml-1 text-[9px] px-1 rounded ${
@@ -444,15 +403,18 @@ export const InteractiveMapSection: React.FC = () => {
               );
             })}
 
-            {/* ガイド注記 */}
-            <div className="absolute bottom-2.5 left-2.5 bg-[#0c0f16]/90 backdrop-blur border border-slate-700 px-2.5 py-1 rounded text-[10px] text-slate-300 pointer-events-none shadow-lg flex items-center space-x-2">
-              <span>🎯 エリア円クリックで詳細情報</span>
-              <span className="text-slate-500">|</span>
-              <span className="text-sky-400">🏕️ 設営キャンプ</span>
-              <span className="text-slate-500">|</span>
-              <span className="text-emerald-400">● 安全</span>
-              <span className="text-amber-400">● 不安定</span>
-              <span className="text-rose-400">● 要注意</span>
+            {/* ガイド注記バー */}
+            <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-[#0c0f16]/90 backdrop-blur border border-slate-700 px-2.5 py-1 rounded text-[10px] text-slate-300 pointer-events-none shadow-lg flex items-center justify-between overflow-x-auto">
+              <div className="flex items-center space-x-2 whitespace-nowrap">
+                <span>🎯 エリア番号・キャンプピンをクリックで詳細連動</span>
+                <span className="text-slate-500">|</span>
+                <span className="text-sky-400">🏕️ 設営キャンプ</span>
+                <span className="text-slate-500">|</span>
+                <span className="text-emerald-400">● 安全</span>
+                <span className="text-amber-400">● 不安定</span>
+                <span className="text-rose-400">● 要注意</span>
+              </div>
+              <span className="text-amber-400 font-bold hidden sm:inline">カプコン公式マップ準拠</span>
             </div>
           </div>
         </div>
@@ -585,32 +547,49 @@ export const InteractiveMapSection: React.FC = () => {
                   <p>{selectedCamp.description}</p>
                 </div>
 
-                <div className="bg-sky-950/20 border border-sky-500/30 p-2.5 rounded-xl text-[11px] text-sky-200">
-                  <strong className="text-sky-300 block mb-0.5">【簡易キャンプ設営方法】</strong>
-                  現地で候補地を発見後、「キャンプ設営キット」を使用するか、ベースキャンプのアイルー（サポート窓口）に依頼して設営します。破壊されても一定時間後に自動修復されます。
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-[#0e121a] p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">設営状況</span>
+                    <span className={`font-bold ${deployedCampIds.includes(selectedCamp.id) ? 'text-sky-400' : 'text-slate-400'}`}>
+                      {deployedCampIds.includes(selectedCamp.id) ? '✓ 設営済み（即時FT可能）' : '未設営'}
+                    </span>
+                  </div>
+                  <div className="bg-[#0e121a] p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">セクレト自動誘導</span>
+                    <span className="text-amber-400 font-bold">全域マップからワンタップ移動可</span>
+                  </div>
                 </div>
               </div>
             ) : selectedArea ? (
               <div className="space-y-2.5 text-xs text-slate-300">
                 <div className="bg-[#0e121a] p-3 rounded-xl border border-slate-800 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 text-[11px]">地形・特徴</span>
-                    <span className="text-amber-300 font-bold">{selectedArea.terrainLabel}</span>
+                    <span className="text-amber-400 font-bold">地質: {selectedArea.terrainLabel}</span>
+                    <span className="text-[10px] text-slate-400">
+                      階層: {selectedArea.elevation === 'surface' ? '地表' : selectedArea.elevation === 'underground' ? '地下' : '全層'}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 text-[11px]">生息・出没モンスター</span>
-                    <span className="text-white font-bold">{selectedArea.monstersFound.join(' / ')}</span>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block">生息・徘徊モンスター:</span>
+                    <span className="text-white font-bold">{selectedArea.monstersFound.join(', ')}</span>
                   </div>
                 </div>
 
-                <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-[11px] text-amber-200">
-                  <strong className="text-amber-300 block mb-0.5">【セクレト自動操縦】</strong>
-                  マップ上でエリア{selectedArea.areaNumber}を目的地に設定すると、セクレトが自動で最速・最適ルートを疾走します。
-                </div>
+                {/* 該当エリアの環境ギミック */}
+                {selectedField.environmentalGimmicks.filter(g => g.area === selectedArea.areaNumber).map((gimmick, idx) => (
+                  <div key={idx} className="bg-purple-950/20 border border-purple-500/30 p-2.5 rounded-xl">
+                    <div className="flex items-center space-x-1.5 text-purple-300 font-bold mb-1">
+                      <Zap className="w-3.5 h-3.5 text-purple-400" />
+                      <span>エリアギミック: {gimmick.name}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">{gimmick.effect}</p>
+                    <p className="text-[10px] text-amber-300/90 mt-1">発動法: {gimmick.howToTrigger}</p>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-slate-500 text-xs space-y-2">
-                <Navigation className="w-7 h-7 mx-auto text-slate-600 animate-pulse" />
+              <div className="p-8 text-center text-slate-500 text-xs">
+                <Navigation className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-400" />
                 <p>マップ上のエリア番号または右上のキャンプ一覧をクリックすると、詳細な地形特徴・安全度・モンスター情報が表示されます。</p>
               </div>
             )}
@@ -618,66 +597,169 @@ export const InteractiveMapSection: React.FC = () => {
         </div>
       </div>
 
-      {/* 環境ギミック ＆ 太古の破片発掘ガイド */}
+      {/* 環境ギミック ＆ 重要採取地（アーティア素材周回） */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 環境ギミック攻略 */}
+        {/* 環境ギミック一覧 */}
         <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
-          <div className="flex items-center space-x-2 text-amber-400 border-b border-slate-800 pb-2">
-            <Zap className="w-4 h-4" />
+          <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-2.5">
+            <Zap className="w-4 h-4 text-amber-400" />
             <h4 className="text-sm sm:text-base font-bold text-white">
               {selectedField.name}の環境ギミック・罠の使い方
             </h4>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {selectedField.environmentalGimmicks.map((gimmick, idx) => (
-              <div key={idx} className="bg-[#161a26] border border-slate-800 rounded-xl p-3.5 space-y-1.5 text-xs">
+              <div key={idx} className="bg-[#0e121a] p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-300 text-sm">{gimmick.name}</span>
-                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">
+                  <span className="font-bold text-amber-300">{gimmick.name}</span>
+                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">
                     エリア {gimmick.area}
                   </span>
                 </div>
-                <p className="text-slate-300 leading-relaxed">{gimmick.effect}</p>
-                <div className="bg-[#0e121a] p-2 rounded-lg text-[11px] text-slate-400 border border-slate-800">
-                  <strong className="text-amber-400">発動方法: </strong>{gimmick.howToTrigger}
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  {gimmick.effect}
+                </p>
+                <div className="bg-slate-900/90 px-2 py-1 rounded text-[10px] text-slate-400">
+                  <span className="text-amber-400/90 font-bold">発動方法: </span>
+                  {gimmick.howToTrigger}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 採取・太古の破片発掘ホットスポット */}
+        {/* 重要採取地 ＆ 太古の破片（アーティア素材）周回ルート */}
         <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
-          <div className="flex items-center space-x-2 text-emerald-400 border-b border-slate-800 pb-2">
-            <Sparkles className="w-4 h-4" />
+          <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-2.5">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
             <h4 className="text-sm sm:text-base font-bold text-white">
               重要採取地 ＆ 太古の破片（アーティア素材）周回
             </h4>
           </div>
 
-          <div className="space-y-3">
-            {selectedField.gatheringHotspots.map((spot, idx) => (
-              <div key={idx} className="bg-[#161a26] border border-slate-800 rounded-xl p-3.5 space-y-1.5 text-xs">
+          <div className="space-y-2">
+            {selectedField.gatheringHotspots.map((hotspot, idx) => (
+              <div key={idx} className="bg-[#0e121a] p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-emerald-300 text-sm">{spot.category}</span>
-                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">
-                    エリア {spot.area}
+                  <span className="font-bold text-emerald-300">{hotspot.category}</span>
+                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">
+                    エリア {hotspot.area}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1 py-1">
-                  {spot.items.map((it, i) => (
-                    <span key={i} className="bg-[#1b2234] border border-slate-700 text-slate-200 px-2 py-0.5 rounded text-[10px]">
-                      {it}
+                <div className="flex flex-wrap gap-1">
+                  {hotspot.items.map((item, i) => (
+                    <span key={i} className="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-slate-200 border border-slate-800">
+                      {item}
                     </span>
                   ))}
                 </div>
-                <p className="text-slate-400 text-[11px]">{spot.tips}</p>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  {hotspot.tips}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* 全画面地図拡大モーダル */}
+      {isZoomModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 animate-fadeIn"
+          onClick={() => setIsZoomModalOpen(false)}
+        >
+          <div 
+            className="relative bg-[#131722] border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* モーダルヘッダー */}
+            <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-[#0e121a]">
+              <div className="flex items-center space-x-2">
+                <Map className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm sm:text-base font-bold text-white">
+                  {selectedField.name} 公式立体全体図（高解像度拡大）
+                </h3>
+              </div>
+
+              {/* 階層切り替え */}
+              <div className="flex items-center space-x-2">
+                {selectedField.availableLayers && (
+                  <div className="flex items-center bg-[#131722] p-1 rounded-lg border border-slate-800 text-xs">
+                    {selectedField.availableLayers.map(layer => (
+                      <button
+                        key={layer.id}
+                        onClick={() => setSelectedLayer(layer.id)}
+                        className={`px-2 py-1 rounded text-[11px] font-bold transition-all ${
+                          selectedLayer === layer.id
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {layer.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setIsZoomModalOpen(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* モーダルマップ画像 */}
+            <div className="relative flex-1 bg-[#16120c] p-2 overflow-auto flex items-center justify-center min-h-[400px]">
+              <div className="relative max-w-full max-h-full aspect-[4/3] flex items-center justify-center">
+                <img
+                  src={getMapImageUrl()}
+                  alt={`${selectedField.name} 公式マップ高解像度`}
+                  className="w-full h-full object-contain filter drop-shadow-2xl select-none"
+                />
+
+                {/* モーダル内ピン表示 */}
+                {(pinFilter === 'all' || pinFilter === 'areas') && visibleNodes.map(node => (
+                  <div
+                    key={node.areaNumber}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
+                    style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                  >
+                    <div className="w-7 h-7 bg-slate-950/85 text-amber-300 border border-amber-500/80 rounded-full flex items-center justify-center font-mono font-black text-xs shadow-lg">
+                      {node.areaNumber}
+                    </div>
+                  </div>
+                ))}
+
+                {(pinFilter === 'all' || pinFilter === 'camps') && selectedField.officialCamps.map(camp => {
+                  const isDeployed = deployedCampIds.includes(camp.id);
+                  return (
+                    <div
+                      key={camp.id}
+                      className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
+                      style={{ left: `${camp.coordinates.x}%`, top: `${camp.coordinates.y}%` }}
+                    >
+                      <div className={`flex items-center justify-center rounded-full border shadow-xl ${
+                        isDeployed
+                          ? 'w-7 h-7 bg-sky-500 border-white text-slate-950'
+                          : `w-5 h-5 ${getSafetyBadgeStyle(camp.safety)}`
+                      }`}>
+                        {isDeployed ? <Tent className="w-3.5 h-3.5" /> : <span className="text-[9px] font-bold">C</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* モーダルフッター */}
+            <div className="p-2.5 sm:p-3 border-t border-slate-800 bg-[#0e121a] text-center text-xs text-slate-400">
+              ゲーム内全体マップと同様の公式仕様。右上の階層切り替えで地表・地下・各階層を切り替え可能。
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
