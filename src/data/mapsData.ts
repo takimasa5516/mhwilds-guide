@@ -1,4 +1,8 @@
 import { FieldMapData } from '../types';
+import windwardPlainsImg from '../assets/maps/windward_plains.jpg';
+import scarletForestImg from '../assets/maps/scarlet_forest.jpg';
+import oilwellBasinImg from '../assets/maps/oilwell_basin.jpg';
+import wyveriaForbiddenImg from '../assets/maps/wyveria_forbidden.jpg';
 
 export const fieldsMapData: FieldMapData[] = [
   // ==========================================
@@ -9,6 +13,7 @@ export const fieldsMapData: FieldMapData[] = [
     name: '隔ての砂原',
     nameEn: 'Windward Plains',
     description: '広大な砂漠、砂岩の洞窟、緑豊かなオアシスが混在する荒野。過酷な「砂嵐と激雷」の異常気象時には、生態系の頂点「雷迅竜レ・ダウ」が空を舞い、落雷が大地をガラス化させる。',
+    mapImageUrl: windwardPlainsImg,
     climates: {
       barren: {
         name: '荒廃期（砂風期）',
@@ -135,7 +140,7 @@ export const fieldsMapData: FieldMapData[] = [
         areaNumber: 1,
         name: '南西ベースキャンプ',
         description: '本陣。食事・装備変更・セクレト待機所。',
-        coordinates: { x: 18, y: 78 }
+        coordinates: { x: 23, y: 70 }
       },
       {
         id: 'pin-camp-7',
@@ -143,8 +148,8 @@ export const fieldsMapData: FieldMapData[] = [
         typeLabel: '簡易キャンプ',
         areaNumber: 7,
         name: 'オアシス簡易キャンプ',
-        description: '水辺へのファストトラベル拠点。',
-        coordinates: { x: 55, y: 62 }
+        description: '水辺・オアシスへのファストトラベル拠点。',
+        coordinates: { x: 22, y: 28 }
       },
       {
         id: 'pin-camp-12',
@@ -153,7 +158,7 @@ export const fieldsMapData: FieldMapData[] = [
         areaNumber: 12,
         name: '地下洞窟簡易キャンプ',
         description: '古代遺構とボス巣穴直通拠点。',
-        coordinates: { x: 72, y: 28 }
+        coordinates: { x: 79, y: 64 }
       },
       {
         id: 'pin-gimmick-lightning',
@@ -162,7 +167,7 @@ export const fieldsMapData: FieldMapData[] = [
         areaNumber: 9,
         name: '避雷針の尖塔',
         description: 'スリンガー弾を撃つとレ・ダウに落雷を誘導し確定ダウン。',
-        coordinates: { x: 68, y: 48 },
+        coordinates: { x: 67, y: 83 },
         climateCondition: 'anomaly'
       },
       {
@@ -172,16 +177,16 @@ export const fieldsMapData: FieldMapData[] = [
         areaNumber: 5,
         name: '底なし流砂盆地',
         description: '大型モンスターを約15秒間沈めて拘束。',
-        coordinates: { x: 38, y: 52 }
+        coordinates: { x: 56, y: 52 }
       },
       {
         id: 'pin-gather-artian',
         type: 'gathering',
         typeLabel: 'アーティア発掘',
         areaNumber: 12,
-        name: '古代文明発掘壁',
+        name: '古代文明要塞跡・発掘壁',
         description: '「太古の破片」「さびた破片」が採れる最高峰ポイント。',
-        coordinates: { x: 80, y: 22 },
+        coordinates: { x: 83, y: 22 },
         gatheringItems: ['太古の破片', '歪んだ結晶']
       },
       {
@@ -191,7 +196,7 @@ export const fieldsMapData: FieldMapData[] = [
         areaNumber: 13,
         name: '雷迅竜の寝床',
         description: '瀕死のレ・ダウが眠る高台。捕獲用麻痺罠設置のベストポイント。',
-        coordinates: { x: 85, y: 35 }
+        coordinates: { x: 59, y: 31 }
       }
     ]
   },
@@ -204,6 +209,7 @@ export const fieldsMapData: FieldMapData[] = [
     name: '緋の森',
     nameEn: 'Scarlet Forest',
     description: '赤い水流と巨大樹が複雑に入り組んだ湿潤帯。異常気象「豪雨・大出水」が発生すると川が一気に氾濫し、水生古生物の頂点「波衣竜ウズ・トゥナ」が森全体を泳ぎ回る。',
+    mapImageUrl: scarletForestImg,
     climates: {
       barren: {
         name: '荒廃期（静謐期）',
@@ -309,36 +315,47 @@ export const fieldsMapData: FieldMapData[] = [
         type: 'camp',
         typeLabel: 'ベースキャンプ',
         areaNumber: 1,
-        name: '森林南ベースキャンプ',
-        description: '緋の森の補給本陣。',
-        coordinates: { x: 22, y: 82 }
+        name: '森林ハンターキャンプ',
+        description: '緋の森の補給本陣。川岸の安全地帯。',
+        coordinates: { x: 38, y: 33 }
       },
       {
         id: 'pin-sf-camp-8',
         type: 'camp',
         typeLabel: '簡易キャンプ',
         areaNumber: 8,
-        name: '巨木テラス簡易キャンプ',
-        description: '森全域を滑空で見渡せる高台。',
-        coordinates: { x: 50, y: 45 }
+        name: '古代見張り塔・簡易キャンプ',
+        description: '森南部を見渡せる古代要塞の高台拠点。',
+        coordinates: { x: 32, y: 83 }
       },
       {
         id: 'pin-sf-gimmick-dam',
         type: 'gimmick',
         typeLabel: '環境罠（ダム決壊）',
         areaNumber: 6,
-        name: '天然ダムの支持木',
-        description: '破壊すると濁流で大ダウンを奪える。',
-        coordinates: { x: 42, y: 30 }
+        name: '鉄壁の天然ダム',
+        description: 'スリンガーで支持木を破壊すると大津波で確定大ダウンを奪える。',
+        coordinates: { x: 53, y: 60 },
+        climateCondition: 'anomaly'
+      },
+      {
+        id: 'pin-sf-gather-artian',
+        type: 'gathering',
+        typeLabel: 'アーティア発掘',
+        areaNumber: 14,
+        name: '水没古代都市・発掘壁',
+        description: '苔むした古代神殿壁から「太古の破片」が採掘可能。',
+        coordinates: { x: 23, y: 46 },
+        gatheringItems: ['太古の破片', '水光原珠']
       },
       {
         id: 'pin-sf-nest-uth',
         type: 'nest',
         typeLabel: 'ボス巣穴',
         areaNumber: 14,
-        name: '水没神殿コア',
-        description: '波衣竜ウズ・トゥナの休息地。',
-        coordinates: { x: 78, y: 20 }
+        name: '波衣竜の営巣地',
+        description: '波衣竜ウズ・トゥナの休息地・産卵岩礁。',
+        coordinates: { x: 86, y: 43 }
       }
     ]
   },
@@ -351,6 +368,7 @@ export const fieldsMapData: FieldMapData[] = [
     name: '油涌き谷',
     nameEn: 'Oilwell Basin',
     description: '地下から原油とガスが激しく噴き出す黒い渓谷地帯。古代の製錬所跡が点在し、異常気象「火走り」が発生すると油泥に引火して谷全体が火炎地獄へと化す。',
+    mapImageUrl: oilwellBasinImg,
     climates: {
       barren: {
         name: '荒廃期（油泥沈静）',
@@ -456,36 +474,47 @@ export const fieldsMapData: FieldMapData[] = [
         type: 'camp',
         typeLabel: 'ベースキャンプ',
         areaNumber: 1,
-        name: '上流ベースキャンプ',
-        description: '油涌き谷の出発拠点。',
-        coordinates: { x: 20, y: 75 }
+        name: '谷口ベースキャンプ',
+        description: '油涌き谷の出撃拠点。洞窟入口の安全地帯。',
+        coordinates: { x: 14, y: 57 }
       },
       {
         id: 'pin-oil-camp-6',
         type: 'camp',
         typeLabel: '簡易キャンプ',
         areaNumber: 6,
-        name: '製錬所簡易キャンプ',
-        description: 'アーティア発掘の拠点。',
-        coordinates: { x: 52, y: 50 }
+        name: '古代製錬所簡易キャンプ',
+        description: 'プラント中層に位置する高低差移動のハブ。',
+        coordinates: { x: 62, y: 43 }
       },
       {
         id: 'pin-oil-gimmick-gas',
         type: 'gimmick',
-        typeLabel: '環境罠（ガス爆破）',
+        typeLabel: '環境罠（原油引火）',
         areaNumber: 5,
-        name: '高圧ガス噴出孔',
-        description: '引火させて大爆発ダメージを狙える。',
-        coordinates: { x: 40, y: 60 }
+        name: 'マグマ原油溜まり引火トラップ',
+        description: '火花石で引火させ大爆発＆火炎ダメージを浴びせる。',
+        coordinates: { x: 42, y: 65 },
+        climateCondition: 'anomaly'
+      },
+      {
+        id: 'pin-oil-gather-artian',
+        type: 'gathering',
+        typeLabel: 'アーティア発掘',
+        areaNumber: 6,
+        name: '古代採掘坑道・発掘壁',
+        description: '「太古の破片」「化石油結晶」が採掘可能。',
+        coordinates: { x: 18, y: 28 },
+        gatheringItems: ['太古の破片', '炎熱の破片']
       },
       {
         id: 'pin-oil-nest-nu',
         type: 'nest',
         typeLabel: 'ボス巣穴',
         areaNumber: 11,
-        name: '黒炎火口コア',
-        description: '黒炎ヌ・エグドラの根城。',
-        coordinates: { x: 80, y: 25 }
+        name: '黒炎火口・モンスター巣穴',
+        description: '黒炎ヌ・エグドラが油泥に潜み眠る最深部。',
+        coordinates: { x: 89, y: 24 }
       }
     ]
   },
@@ -498,6 +527,7 @@ export const fieldsMapData: FieldMapData[] = [
     name: '竜都・禁足地',
     nameEn: 'Wyverian Sacred Area',
     description: '調査隊が最後に到達する、失われた古代竜人の超巨大都市遺構。白い竜乳結晶に覆われ、本作のラスボス「白熾龍ゾ・シア」および「鎖刃竜アルシュベルド」が激突する聖域。',
+    mapImageUrl: wyveriaForbiddenImg,
     climates: {
       barren: {
         name: '荒廃期（静寂の白都）',
@@ -584,36 +614,47 @@ export const fieldsMapData: FieldMapData[] = [
         type: 'camp',
         typeLabel: 'ベースキャンプ',
         areaNumber: 1,
-        name: '竜都外縁ベースキャンプ',
-        description: '最終決戦の補給基地。',
-        coordinates: { x: 25, y: 75 }
+        name: '竜都関門・前線ベースキャンプ',
+        description: '白熾龍討伐隊の最終補給基地。',
+        coordinates: { x: 24, y: 75 }
       },
       {
         id: 'pin-for-camp-5',
         type: 'camp',
         typeLabel: '簡易キャンプ',
         areaNumber: 5,
-        name: '神殿回廊簡易キャンプ',
-        description: '祭壇直通の安全地帯。',
-        coordinates: { x: 50, y: 45 }
+        name: '回廊階段・簡易キャンプ',
+        description: '神殿回廊中央。玉座への直通中継点。',
+        coordinates: { x: 48, y: 44 }
       },
       {
         id: 'pin-for-gimmick-tower',
         type: 'gimmick',
         typeLabel: '環境罠（共鳴装置）',
         areaNumber: 7,
-        name: '竜乳共鳴塔',
-        description: '起動でゾ・シアの装甲を強制解除。',
-        coordinates: { x: 75, y: 25 }
+        name: '超古代・白熾共鳴塔',
+        description: 'スリンガー起動で強力なパルスを放ち、ゾ・シアの白熾纏いを強制解除。',
+        coordinates: { x: 71, y: 30 },
+        climateCondition: 'anomaly'
+      },
+      {
+        id: 'pin-for-gather-artian',
+        type: 'gathering',
+        typeLabel: 'アーティア発掘',
+        areaNumber: 3,
+        name: '竜乳結晶クレーター・発掘壁',
+        description: '超高純度の「太古の破片」「神聖原珠」が密集する最高峰鉱脈。',
+        coordinates: { x: 36, y: 53 },
+        gatheringItems: ['太古の破片', '白熾の竜乳石']
       },
       {
         id: 'pin-for-nest-zoh',
         type: 'nest',
         typeLabel: 'ラスボス決戦地',
-        areaNumber: 7,
-        name: '白熾の祭壇',
-        description: '白熾龍ゾ・シアの神域。',
-        coordinates: { x: 80, y: 20 }
+        areaNumber: 10,
+        name: '白熾龍の至聖玉座',
+        description: '頂点たる白熾龍ゾ・シアが鎮座する最終神域。',
+        coordinates: { x: 58, y: 20 }
       }
     ]
   }

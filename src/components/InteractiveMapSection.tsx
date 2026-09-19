@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { fieldsMapData } from '../data/mapsData';
 import { FieldMapData, ClimateSeason, MapPin } from '../types';
-import { Map, Tent, Zap, Sparkles, Compass, Eye, AlertTriangle, Droplets, Flame, Wind, Layers, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Map, Tent, Zap, Sparkles, Compass, Eye, AlertTriangle, Droplets, Flame, Wind, Layers, ChevronRight, CheckCircle2, Maximize2, X } from 'lucide-react';
 
 export const InteractiveMapSection: React.FC = () => {
   const [selectedFieldId, setSelectedFieldId] = useState<string>('windward-plains');
   const [selectedClimate, setSelectedClimate] = useState<ClimateSeason>('anomaly');
   const [pinFilter, setPinFilter] = useState<'all' | 'camp' | 'gimmick' | 'gathering' | 'nest'>('all');
   const [activePin, setActivePin] = useState<MapPin | null>(null);
+  const [isZoomed, setIsZoomed] = useState<boolean>(false);
 
   const selectedField = fieldsMapData.find(f => f.id === selectedFieldId) || fieldsMapData[0];
   const climateInfo = selectedField.climates[selectedClimate];
@@ -215,28 +216,54 @@ export const InteractiveMapSection: React.FC = () => {
             </div>
           </div>
 
-          {/* マップビジュアルエリア（スタイリッシュグリッド） */}
-          <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#0c0f17] via-[#141926] to-[#0d1017] rounded-xl border border-slate-800 overflow-hidden shadow-inner flex items-center justify-center">
-            {/* 背景のグリッド線と地形風装飾 */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d15_1px,transparent_1px),linear-gradient(to_bottom,#1f293d15_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
-            
-            {/* 地形リング装飾 */}
-            <div className="absolute w-72 h-72 rounded-full border border-amber-500/10 pointer-events-none"></div>
-            <div className="absolute w-96 h-96 rounded-full border border-sky-500/10 pointer-events-none"></div>
+          {/* マップビジュアルエリア（ゲーム内立体地形図 ＆ インタラクティブHUD） */}
+          <div className="relative w-full aspect-[4/3] bg-[#0c0f17] rounded-xl border border-slate-700/80 overflow-hidden shadow-2xl flex items-center justify-center group">
+            {/* 地形地図イラスト背景画像 */}
+            <img
+              src={selectedField.mapImageUrl}
+              alt={`${selectedField.name} 立体フィールド地図`}
+              className={`absolute inset-0 w-full h-full object-cover select-none transition-all duration-700 ${
+                selectedClimate === 'barren'
+                  ? 'sepia-[0.15] contrast-110 brightness-95'
+                  : selectedClimate === 'anomaly'
+                  ? 'brightness-90 contrast-125 saturate-110'
+                  : 'saturate-125 brightness-105'
+              }`}
+            />
 
-            {/* エリア番号表示バッジ（背景） */}
-            {selectedField.areas.map(area => (
-              <div
-                key={area.areaNumber}
-                className="absolute text-slate-600/40 font-black text-2xl select-none pointer-events-none"
-                style={{
-                  left: `${(area.areaNumber * 18) % 75 + 10}%`,
-                  top: `${(area.areaNumber * 23) % 70 + 15}%`
-                }}
-              >
-                AREA {area.areaNumber}
-              </div>
-            ))}
+            {/* 気候連動オーラ・環境エフェクトオーバーレイ */}
+            {selectedClimate === 'anomaly' && (
+              <div className="absolute inset-0 bg-gradient-to-t from-purple-950/40 via-purple-900/10 to-purple-950/30 pointer-events-none mix-blend-overlay animate-pulse"></div>
+            )}
+            {selectedClimate === 'abundant' && (
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/20 via-transparent to-amber-950/20 pointer-events-none"></div>
+            )}
+
+            {/* 周辺減光（ヴィネット）＆タクティカルHUDフレーム */}
+            <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.7)] pointer-events-none"></div>
+            <div className="absolute inset-0 border border-amber-500/20 rounded-xl pointer-events-none"></div>
+            
+            {/* HUDコーナーブラケット */}
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-400 pointer-events-none"></div>
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-400 pointer-events-none"></div>
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-400 pointer-events-none"></div>
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-400 pointer-events-none"></div>
+
+            {/* 地図情報バッジ */}
+            <div className="absolute top-3 left-3 bg-[#0c0f16]/90 backdrop-blur border border-amber-500/30 px-2.5 py-1 rounded-lg text-[10px] text-amber-300 font-bold shadow-lg flex items-center space-x-1.5 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>{selectedField.name} 立体地形地図（{selectedField.nameEn}）</span>
+            </div>
+
+            {/* 拡大表示ボタン */}
+            <button
+              onClick={() => setIsZoomed(true)}
+              className="absolute top-3 right-3 bg-[#0c0f16]/90 hover:bg-[#1a2030] backdrop-blur border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-white px-2 py-1 rounded-lg text-[11px] font-semibold shadow-lg flex items-center space-x-1 transition-all z-20"
+              title="地図を高解像度で全画面拡大"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">地図拡大</span>
+            </button>
 
             {/* インタラクティブピン */}
             {filteredPins.map(pin => {
@@ -244,15 +271,15 @@ export const InteractiveMapSection: React.FC = () => {
               const getPinStyle = (type: string) => {
                 switch (type) {
                   case 'camp':
-                    return 'bg-sky-500 text-slate-950 border-sky-300 shadow-sky-500/40';
+                    return 'bg-sky-500 text-slate-950 border-sky-200 shadow-sky-500/60 ring-2 ring-sky-400/40';
                   case 'gimmick':
-                    return 'bg-purple-500 text-white border-purple-300 shadow-purple-500/40';
+                    return 'bg-purple-600 text-white border-purple-200 shadow-purple-600/60 ring-2 ring-purple-400/40';
                   case 'gathering':
-                    return 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/40';
+                    return 'bg-emerald-500 text-slate-950 border-emerald-200 shadow-emerald-500/60 ring-2 ring-emerald-400/40';
                   case 'nest':
-                    return 'bg-rose-500 text-white border-rose-300 shadow-rose-500/40';
+                    return 'bg-rose-600 text-white border-rose-200 shadow-rose-600/60 ring-2 ring-rose-400/40';
                   default:
-                    return 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/40';
+                    return 'bg-amber-500 text-slate-950 border-amber-200 shadow-amber-500/60 ring-2 ring-amber-400/40';
                 }
               };
 
@@ -267,23 +294,40 @@ export const InteractiveMapSection: React.FC = () => {
               };
 
               return (
-                <button
+                <div
                   key={pin.id}
-                  onClick={() => setActivePin(pin)}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-lg cursor-pointer transition-all hover:scale-125 z-20 ${getPinStyle(pin.type)} ${
-                    isSelected ? 'ring-4 ring-amber-400 scale-125 z-30 animate-bounce' : ''
-                  }`}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 group/pin"
                   style={{ left: `${pin.coordinates.x}%`, top: `${pin.coordinates.y}%` }}
-                  title={`${pin.name} (エリア${pin.areaNumber})`}
                 >
-                  <span className="text-xs">{getPinIcon(pin.type)}</span>
-                </button>
+                  {/* 選択中の波紋エフェクト */}
+                  {isSelected && (
+                    <span className="absolute -inset-2 rounded-full bg-amber-400/40 animate-ping pointer-events-none"></span>
+                  )}
+
+                  {/* ピンボタン */}
+                  <button
+                    onClick={() => setActivePin(pin)}
+                    className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-2xl cursor-pointer transition-all hover:scale-125 ${getPinStyle(pin.type)} ${
+                      isSelected ? 'ring-4 ring-amber-400 scale-125 z-30' : ''
+                    }`}
+                    title={`${pin.name} (エリア${pin.areaNumber})`}
+                  >
+                    <span className="text-xs filter drop-shadow">{getPinIcon(pin.type)}</span>
+                  </button>
+
+                  {/* ホバーまたは選択時の吹き出しラベル */}
+                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5 rounded bg-slate-950/95 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-2xl pointer-events-none transition-all ${
+                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover/pin:opacity-100 group-hover/pin:scale-100'
+                  }`}>
+                    {pin.name}
+                  </div>
+                </div>
               );
             })}
 
             {/* ガイド注記 */}
-            <div className="absolute bottom-2 left-2 bg-[#0c0f16]/90 border border-slate-800 px-2.5 py-1 rounded text-[10px] text-slate-400 pointer-events-none">
-              座標クリックで詳細確認可能
+            <div className="absolute bottom-2.5 left-2.5 bg-[#0c0f16]/90 backdrop-blur border border-slate-700 px-2.5 py-1 rounded text-[10px] text-slate-300 pointer-events-none shadow-lg">
+              🎯 ピンをクリックで詳細情報・ギミック手順を表示
             </div>
           </div>
         </div>
@@ -420,6 +464,95 @@ export const InteractiveMapSection: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 地図全画面・高解像度拡大モーダル */}
+      {isZoomed && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col p-2 sm:p-4 animate-in fade-in duration-200">
+          {/* モーダルヘッダー */}
+          <div className="flex items-center justify-between px-3 py-2 bg-[#121622] border border-slate-800 rounded-t-xl">
+            <div className="flex items-center space-x-2">
+              <Map className="w-5 h-5 text-amber-400" />
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                【高精細立体地形図】{selectedField.name}（{selectedField.nameEn}）
+              </h3>
+              <span className="hidden sm:inline-block text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+                {climateInfo.name}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsZoomed(false)}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all flex items-center space-x-1"
+            >
+              <X className="w-5 h-5" />
+              <span className="text-xs font-bold pr-1">閉じる</span>
+            </button>
+          </div>
+
+          {/* モーダルマップキャンバス */}
+          <div className="relative flex-1 bg-[#0c0f17] border-x border-b border-slate-800 rounded-b-xl overflow-hidden flex items-center justify-center">
+            <img
+              src={selectedField.mapImageUrl}
+              alt={selectedField.name}
+              className="w-full h-full object-contain select-none"
+            />
+
+            {/* モーダル内ピン配置 */}
+            {filteredPins.map(pin => {
+              const isSelected = activePin?.id === pin.id;
+              const getPinIcon = (type: string) => {
+                switch (type) {
+                  case 'camp': return '🏕️';
+                  case 'gimmick': return '⚡';
+                  case 'gathering': return '💎';
+                  case 'nest': return '🐲';
+                  default: return '📍';
+                }
+              };
+
+              return (
+                <div
+                  key={pin.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-30"
+                  style={{ left: `${pin.coordinates.x}%`, top: `${pin.coordinates.y}%` }}
+                >
+                  <button
+                    onClick={() => setActivePin(pin)}
+                    className={`relative flex items-center justify-center w-9 h-9 rounded-full border-2 shadow-2xl cursor-pointer transition-all hover:scale-125 ${
+                      pin.type === 'camp' ? 'bg-sky-500 text-slate-950 border-white' :
+                      pin.type === 'gimmick' ? 'bg-purple-600 text-white border-white' :
+                      pin.type === 'gathering' ? 'bg-emerald-500 text-slate-950 border-white' :
+                      'bg-rose-600 text-white border-white'
+                    } ${isSelected ? 'ring-4 ring-amber-400 scale-125' : ''}`}
+                    title={pin.name}
+                  >
+                    <span className="text-sm">{getPinIcon(pin.type)}</span>
+                  </button>
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-1.5 py-0.5 rounded bg-black/90 border border-slate-700 text-white text-[10px] font-bold whitespace-nowrap shadow-lg">
+                    {pin.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 選択中のピン情報下部バー */}
+          {activePin && (
+            <div className="mt-2 bg-[#121622] border border-amber-500/40 p-3 rounded-xl flex items-center justify-between text-xs text-slate-200">
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-amber-300 text-sm">{activePin.name}</span>
+                <span className="text-slate-400">（エリア{activePin.areaNumber}・{activePin.typeLabel}）</span>
+                <span className="hidden sm:inline text-slate-300">: {activePin.description}</span>
+              </div>
+              <button
+                onClick={() => setIsZoomed(false)}
+                className="text-amber-400 hover:underline text-xs whitespace-nowrap font-bold"
+              >
+                詳細パネルで見る →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

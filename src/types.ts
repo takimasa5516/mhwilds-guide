@@ -244,6 +244,7 @@ export interface FieldMapData {
   name: string;
   nameEn: string;
   description: string;
+  mapImageUrl: string;
   climates: {
     barren: {
       name: string;
