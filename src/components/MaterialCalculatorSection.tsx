@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { craftableTargetsData } from '../data/materialsData';
-import { CraftableTarget } from '../types';
-import { Calculator, Plus, Trash2, CheckCircle2, Sparkles, Crosshair, HelpCircle } from 'lucide-react';
+import { CraftableTarget, WeaponType } from '../types';
+import { Calculator, Plus, Trash2, CheckCircle2, Sparkles, Crosshair, HelpCircle, Filter, Swords, Shield, Flame, Zap, Award } from 'lucide-react';
 
 interface WishlistItem {
   targetId: string;
@@ -13,24 +13,20 @@ function calculateSafeHunts(needed: number, dropRatePerHunt: number): number {
   if (needed <= 0) return 0;
   const p = Math.min(Math.max(dropRatePerHunt / 100, 0.01), 3.0);
 
-  // 1回の狩猟で平均1個以上出る素材の場合
   if (p >= 1.0) {
     return Math.ceil(needed / p * 1.3);
   }
 
-  // レア素材（宝玉など、p < 1.0）
   if (needed === 1) {
-    // 1 - (1 - p)^n >= 0.90  =>  (1 - p)^n <= 0.10  =>  n >= ln(0.10) / ln(1 - p)
     const n = Math.log(0.10) / Math.log(1 - p);
     return Math.ceil(n);
   }
 
-  // 複数個必要な場合（二項分布の累積計算）
   let n = Math.max(needed, Math.ceil(needed / p));
   for (; n < 100; n++) {
     const lambda = n * p;
     let cumulativeProb = 0;
-    let term = Math.exp(-lambda); // k=0
+    let term = Math.exp(-lambda);
     cumulativeProb += term;
     for (let k = 1; k < needed; k++) {
       term = (term * lambda) / k;
@@ -44,24 +40,46 @@ function calculateSafeHunts(needed: number, dropRatePerHunt: number): number {
   return n;
 }
 
+// 武器種ラベルマッピング
+const weaponTypeLabels: Record<string, string> = {
+  all: '全武器・防具',
+  greatsword: '大剣',
+  longsword: '太刀',
+  swordandshield: '片手剣',
+  duablades: '双剣',
+  hammer: 'ハンマー',
+  huntinghorn: '狩猟笛',
+  lance: 'ランス',
+  gunlance: 'ガンランス',
+  switchaxe: 'スラアク',
+  chargeblade: 'チャアク',
+  insectglaive: '操虫棍',
+  lightbowgun: 'ライト',
+  heavybowgun: 'ヘビィ',
+  bow: '弓',
+  armor_deco: '防具・装飾品'
+};
+
 export const MaterialCalculatorSection: React.FC = () => {
-  // 初期ウィッシュリストに「神剣ゾ・シア（片手剣）」と「アーティア一式」をセット
+  // 初期ウィッシュリスト
   const [wishlist, setWishlist] = useState<WishlistItem[]>([
     { targetId: 'zoh-shia-sword', quantity: 1 },
-    { targetId: 'artian-full-set', quantity: 1 }
+    { targetId: 'artian-full-set', quantity: 1 },
+    { targetId: 'gs-zoh-shia', quantity: 1 }
   ]);
 
-  // 各素材のユーザー所持数管理 (materialId => 所持数)
+  // 各素材の手持ち所持数
   const [ownedCounts, setOwnedCounts] = useState<Record<string, number>>({
-    'zoh-horn': 1,
+    'zoh-horn': 2,
     'zoh-milk-gem': 0,
-    'ancient-fragment': 6
+    'ancient-fragment': 8
   });
 
-  // 装備追加モーダル用状態
-  const [selectedTargetToAdd, setSelectedTargetToAdd] = useState<string>(craftableTargetsData[0].id);
+  // フィルター状態
+  const [selectedWeaponFilter, setSelectedWeaponFilter] = useState<string>('all');
+  const [selectedBuildTypeFilter, setSelectedBuildTypeFilter] = useState<string>('all');
 
-  // ウィッシュリストへの追加
+  // ウィッシュリスト追加
   const addToWishlist = (targetId: string) => {
     setWishlist(prev => {
       const existing = prev.find(item => item.targetId === targetId);
@@ -74,18 +92,18 @@ export const MaterialCalculatorSection: React.FC = () => {
     });
   };
 
-  // ウィッシュリストからの削除
+  // ウィッシュリストから削除
   const removeFromWishlist = (targetId: string) => {
     setWishlist(prev => prev.filter(item => item.targetId !== targetId));
   };
 
-  // 数量変更
+  // 数量増減
   const updateQuantity = (targetId: string, delta: number) => {
     setWishlist(prev =>
       prev
         .map(item => {
           if (item.targetId === targetId) {
-            const newQty = Math.max(1, Math.min(5, item.quantity + delta));
+            const newQty = Math.max(1, Math.min(10, item.quantity + delta));
             return { ...item, quantity: newQty };
           }
           return item;
@@ -102,7 +120,66 @@ export const MaterialCalculatorSection: React.FC = () => {
     }));
   };
 
-  // ウィッシュリストの全素材を集計
+  // プリセット一括設定
+  const applyPreset = (presetName: 'sns-elements' | 'gs-meta' | 'ls-meta' | 'all-zoh') => {
+    switch (presetName) {
+      case 'sns-elements':
+        setWishlist([
+          { targetId: 'zoh-shia-sword', quantity: 1 },
+          { targetId: 'uth-duna-sns', quantity: 1 },
+          { targetId: 'ajarakan-sns', quantity: 1 },
+          { targetId: 'jin-dahad-sns', quantity: 1 },
+          { targetId: 'chatacabra-sns-para', quantity: 1 }
+        ]);
+        break;
+      case 'gs-meta':
+        setWishlist([
+          { targetId: 'gs-zoh-shia', quantity: 1 },
+          { targetId: 'artian-full-set', quantity: 1 },
+          { targetId: 'critical-jewel', quantity: 1 }
+        ]);
+        break;
+      case 'ls-meta':
+        setWishlist([
+          { targetId: 'ls-zoh-shia', quantity: 1 },
+          { targetId: 'ls-rey-dau', quantity: 1 },
+          { targetId: 'arkveld-armor-set', quantity: 1 }
+        ]);
+        break;
+      case 'all-zoh':
+        setWishlist([
+          { targetId: 'zoh-shia-sword', quantity: 1 },
+          { targetId: 'gs-zoh-shia', quantity: 1 },
+          { targetId: 'ls-zoh-shia', quantity: 1 },
+          { targetId: 'zoh-shia-armor-set', quantity: 1 }
+        ]);
+        break;
+    }
+  };
+
+  // フィルター済みターゲットアイテム一覧
+  const filteredTargets = useMemo(() => {
+    return craftableTargetsData.filter(target => {
+      // 武器種フィルター
+      if (selectedWeaponFilter !== 'all') {
+        if (selectedWeaponFilter === 'armor_deco') {
+          if (target.category !== 'armor' && target.category !== 'decoration') return false;
+        } else {
+          if (target.weaponType !== selectedWeaponFilter) return false;
+        }
+      }
+      // ビルドタイプフィルター
+      if (selectedBuildTypeFilter !== 'all') {
+        if (selectedBuildTypeFilter === 'physical' && target.buildType !== 'physical') return false;
+        if (selectedBuildTypeFilter === 'elemental' && target.buildType !== 'elemental') return false;
+        if (selectedBuildTypeFilter === 'status' && target.buildType !== 'status') return false;
+        if (selectedBuildTypeFilter === 'general' && target.buildType !== 'general') return false;
+      }
+      return true;
+    });
+  }, [selectedWeaponFilter, selectedBuildTypeFilter]);
+
+  // 全素材の集計
   const aggregatedMaterials = useMemo(() => {
     const map = new Map<string, {
       materialId: string;
@@ -157,7 +234,7 @@ export const MaterialCalculatorSection: React.FC = () => {
     });
   }, [wishlist, ownedCounts]);
 
-  // モンスター別の最大必要討伐数を集計
+  // モンスター別討伐数サマリー
   const monsterSummary = useMemo(() => {
     const summaryMap = new Map<string, {
       monsterId: string;
@@ -200,54 +277,73 @@ export const MaterialCalculatorSection: React.FC = () => {
       <div className="border-b border-slate-800 pb-4">
         <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
           <Calculator className="w-4 h-4" />
-          <span>Wishlist & Drop Probability Simulator</span>
+          <span>Wishlist & Probability Simulator (All 14 Weapons)</span>
         </div>
         <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-          ウィッシュリスト × 必要素材 × 対象モンスター討伐数シミュレーター
+          全14武器種対応 ウィッシュリスト × 必要素材 × 討伐数シミュレーター
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-          作りたい装備を選択し、手持ち素材を入力するだけで「期待討伐数（平均）」と「90%安心討伐数（確率二項計算）」を瞬時に算出！
+          大剣・太刀・片手剣・双剣・ガンナー等【全14武器種】の「物理最強」「属性特化」「状態異常」装備に対応！手持ち素材を入力するだけで期待討伐数＆90%安心討伐数を瞬時に算出します。
         </p>
       </div>
 
-      {/* ウィッシュリスト管理セクション */}
+      {/* プリセット一括登録ボタン */}
+      <div className="bg-[#121622] border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>人気ウィッシュリスト即時プリセット:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => applyPreset('sns-elements')}
+            className="bg-[#181d2a] hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          >
+            片手剣 5属性特化一式
+          </button>
+          <button
+            onClick={() => applyPreset('gs-meta')}
+            className="bg-[#181d2a] hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          >
+            大剣 真溜め物理セット
+          </button>
+          <button
+            onClick={() => applyPreset('ls-meta')}
+            className="bg-[#181d2a] hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          >
+            太刀 居合兜割りセット
+          </button>
+          <button
+            onClick={() => applyPreset('all-zoh')}
+            className="bg-[#181d2a] hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          >
+            白熾龍ゾ・シア 武器防具一式
+          </button>
+        </div>
+      </div>
+
+      {/* 現在のウィッシュリスト */}
       <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>現在登録中のウィッシュリスト</span>
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>登録中のウィッシュリスト</span>
             </h3>
-            <span className="text-xs text-slate-400">作成したい武器・防具・装飾品を選択してください</span>
+            <span className="text-xs text-slate-400">作成予定の装備・装飾品（数量の変更や削除が可能）</span>
           </div>
-
-          {/* 装備追加UI */}
-          <div className="flex items-center space-x-2">
-            <select
-              value={selectedTargetToAdd}
-              onChange={(e) => setSelectedTargetToAdd(e.target.value)}
-              className="bg-[#161a26] text-xs sm:text-sm text-slate-200 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 max-w-[240px] sm:max-w-xs truncate"
-            >
-              {craftableTargetsData.map(target => (
-                <option key={target.id} value={target.id}>
-                  {target.name}
-                </option>
-              ))}
-            </select>
+          {wishlist.length > 0 && (
             <button
-              onClick={() => addToWishlist(selectedTargetToAdd)}
-              className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-md shadow-amber-500/10 whitespace-nowrap"
+              onClick={() => setWishlist([])}
+              className="text-xs text-slate-400 hover:text-rose-400 transition-colors self-start sm:self-auto"
             >
-              <Plus className="w-4 h-4" />
-              <span>追加</span>
+              すべてクリア
             </button>
-          </div>
+          )}
         </div>
 
-        {/* ウィッシュリスト一覧カード */}
         {wishlist.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">
-            ウィッシュリストにアイテムがありません。上のセレクトボックスから装備を追加してください。
+          <div className="text-center py-6 text-slate-500 text-sm">
+            ウィッシュリストにアイテムがありません。下記の装備一覧から追加してください。
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -296,6 +392,134 @@ export const MaterialCalculatorSection: React.FC = () => {
             })}
           </div>
         )}
+      </div>
+
+      {/* 装備カタログ・選択追加セクション */}
+      <div className="bg-[#121622] border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              <span>全14武器種＆装備カタログから追加</span>
+            </h3>
+            <span className="text-xs text-slate-400">
+              武器種やビルドタイプ（物理最強・属性特化・状態異常）で絞り込み、ワンクリックで追加
+            </span>
+          </div>
+
+          {/* ビルドタイプフィルター */}
+          <div className="flex items-center bg-[#0e121a] p-1 rounded-lg border border-slate-800 self-start md:self-auto overflow-x-auto max-w-full">
+            <button
+              onClick={() => setSelectedBuildTypeFilter('all')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                selectedBuildTypeFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400'
+              }`}
+            >
+              全ビルド
+            </button>
+            <button
+              onClick={() => setSelectedBuildTypeFilter('physical')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                selectedBuildTypeFilter === 'physical' ? 'bg-orange-500 text-white font-bold' : 'text-orange-400'
+              }`}
+            >
+              ⚔️ 物理・会心最強
+            </button>
+            <button
+              onClick={() => setSelectedBuildTypeFilter('elemental')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                selectedBuildTypeFilter === 'elemental' ? 'bg-sky-500 text-white font-bold' : 'text-sky-400'
+              }`}
+            >
+              🔥 属性特化
+            </button>
+            <button
+              onClick={() => setSelectedBuildTypeFilter('status')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                selectedBuildTypeFilter === 'status' ? 'bg-purple-500 text-white font-bold' : 'text-purple-400'
+              }`}
+            >
+              🟣 状態異常
+            </button>
+            <button
+              onClick={() => setSelectedBuildTypeFilter('general')}
+              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                selectedBuildTypeFilter === 'general' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-emerald-400'
+              }`}
+            >
+              🛡️ 防具・装飾品
+            </button>
+          </div>
+        </div>
+
+        {/* 武器種クイック選択ピル（スマホ横スクロール対応） */}
+        <div className="overflow-x-auto pb-1 scrollbar-thin">
+          <div className="flex items-center space-x-1.5 min-w-max">
+            {Object.entries(weaponTypeLabels).map(([key, label]) => {
+              const isSelected = selectedWeaponFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedWeaponFilter(key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                      : 'bg-[#151a26] text-slate-300 hover:bg-[#1a2030] hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ターゲット一覧グリッド */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+          {filteredTargets.map(target => {
+            const isAdded = wishlist.some(item => item.targetId === target.id);
+            return (
+              <div
+                key={target.id}
+                className="bg-[#151a26] border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">
+                      {target.categoryLabel}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {target.buildTypeLabel}
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white mt-1.5 line-clamp-2">
+                    {target.name}
+                  </h4>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    必要素材: {target.requiredMaterials.map(m => m.materialName).join(' / ')}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400">
+                    対象: {target.requiredMaterials[0]?.monsterName}
+                  </span>
+                  <button
+                    onClick={() => addToWishlist(target.id)}
+                    className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      isAdded
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{isAdded ? '追加 (+1)' : 'ウィッシュリストへ'}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* 討伐目標サマリー：今どのモンスターを何体狩るべきか？ */}
@@ -363,7 +587,7 @@ export const MaterialCalculatorSection: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Calculator className="w-4 h-4 text-amber-400" />
             <h3 className="text-base font-bold text-white">
-              必要素材一覧・ドロップ率・所持数カウンター
+              全素材一覧・手持ちカウンター ＆ 討伐数シミュレーション
             </h3>
           </div>
           <span className="text-xs text-slate-400">
@@ -373,7 +597,7 @@ export const MaterialCalculatorSection: React.FC = () => {
 
         {aggregatedMaterials.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-sm">
-            対象素材がありません
+            対象素材がありません。上のカタログから装備を追加してください。
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -400,7 +624,6 @@ export const MaterialCalculatorSection: React.FC = () => {
                         isCompleted ? 'bg-emerald-950/10' : ''
                       }`}
                     >
-                      {/* 素材名 */}
                       <td className="p-3 sm:p-4 font-bold text-slate-200">
                         <div className="flex items-center space-x-1.5">
                           {isCompleted ? (
@@ -414,17 +637,14 @@ export const MaterialCalculatorSection: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* モンスター名 */}
                       <td className="p-3 sm:p-4 text-slate-300">
                         <span className="font-semibold text-amber-300">{mat.monsterName}</span>
                       </td>
 
-                      {/* 必要数 */}
                       <td className="p-3 sm:p-4 text-center font-bold text-white">
                         {mat.totalRequired}
                       </td>
 
-                      {/* 所持数入力 */}
                       <td className="p-3 sm:p-4 text-center">
                         <input
                           type="number"
@@ -435,7 +655,6 @@ export const MaterialCalculatorSection: React.FC = () => {
                         />
                       </td>
 
-                      {/* 不足数 */}
                       <td className="p-3 sm:p-4 text-center font-bold">
                         {isCompleted ? (
                           <span className="text-emerald-400">達成済</span>
@@ -444,7 +663,6 @@ export const MaterialCalculatorSection: React.FC = () => {
                         )}
                       </td>
 
-                      {/* ドロップ内訳 */}
                       <td className="p-3 sm:p-4">
                         <div className="space-y-1">
                           <div className="flex items-center space-x-1 text-[11px] text-amber-300 font-bold">
@@ -464,12 +682,10 @@ export const MaterialCalculatorSection: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* 期待討伐数 */}
                       <td className="p-3 sm:p-4 text-center font-black text-amber-400 text-sm bg-amber-500/5">
                         {isCompleted ? '-' : `${mat.expectedHunts} 体`}
                       </td>
 
-                      {/* 90%安心討伐数 */}
                       <td className="p-3 sm:p-4 text-center font-black text-emerald-400 text-sm bg-emerald-500/5">
                         {isCompleted ? '-' : `${mat.safeHunts} 体`}
                       </td>
@@ -481,14 +697,13 @@ export const MaterialCalculatorSection: React.FC = () => {
           </div>
         )}
 
-        {/* 確率シミュレーターの算出根拠についての注釈 */}
         <div className="p-4 bg-[#0e121a] border-t border-slate-800 text-xs text-slate-400 flex items-start space-x-2">
           <HelpCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <span className="font-bold text-slate-300">【討伐数算出ロジックについて】</span>
+            <span className="font-bold text-slate-300">【全14武器種対応 討伐数算出ロジック】</span>
             <p className="leading-relaxed text-[11px]">
-              ・<strong className="text-amber-300">期待討伐数</strong>：1回のクエストクリアで得られる素材期待個数（剥ぎ取り＋部位破壊＋傷口破壊＋報酬枠の合計）に基づく平均討伐数です。<br />
-              ・<strong className="text-emerald-300">90%安心討伐数</strong>：宝玉などの確率ドロップ素材において、「確率90%以上の信頼度で必要個数が集まる」までの討伐数を二項分布およびポアソン近似により厳密に算出しています。物欲センサーによる下振れを回避するための計画にお役立てください。
+              ・大剣・太刀・片手剣・双剣・ハンマー・狩猟笛・ランス・ガンランス・スラアク・チャアク・操虫棍・ライト・ヘビィ・弓の各武器種における物理・属性・状態異常の必要素材をリアルタイムにマージして集計しています。<br />
+              ・複数の装備を作成する場合でも、同一素材（白熾龍の神角、竜玉、大竜玉等）は合算され、効率的に並行狩猟計画を立てられます。
             </p>
           </div>
         </div>

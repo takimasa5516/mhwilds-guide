@@ -198,6 +198,8 @@ export interface CraftableTarget {
   category: 'weapon' | 'armor' | 'decoration' | 'talisman';
   categoryLabel: string;
   weaponType?: WeaponType;
+  buildType?: 'physical' | 'elemental' | 'status' | 'general';
+  buildTypeLabel?: string;
   requiredMaterials: {
     materialId: string;
     materialName: string;
